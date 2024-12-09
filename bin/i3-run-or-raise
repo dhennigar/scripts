@@ -20,11 +20,16 @@ if (@ARGV < 2) {
 }
 my ($identifier, $command) = @ARGV;
 
-my $focus_by_app_id = system("swaymsg", "[app_id=$identifier] focus") == 0;
+my $msg = "i3-msg";
+if (exists $ENV{"SWAYSOCK"}) {
+  $msg = "swaymsg";
+}
+
+my $focus_by_app_id = system("$msg", "[app_id=$identifier] focus") == 0;
 unless ($focus_by_app_id) {
-    my $focus_by_class = system("swaymsg", "[class=$identifier] focus") == 0;
+    my $focus_by_class = system("$msg", "[class=$identifier] focus") == 0;
 
     unless ($focus_by_class) {
-        system("swaymsg", "exec", $command);
+        system("$msg", "exec", $command);
     }
 }
