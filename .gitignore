@@ -1,0 +1,21 @@
+# Temporary build files
+blib/
+Makefile
+Makefile.old
+pm_to_blib
+
+# Local metadata files
+MYMETA.json
+MYMETA.yml
+
+# Distribution tarballs
+*.tar.gz
+
+# Test build logs and temporary files
+test.log
+nytprof.out
+
+# Editor/OS-specific files
+*~
+.swp
+.DS_Store
