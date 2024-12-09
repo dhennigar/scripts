@@ -17,7 +17,7 @@
 
 use 5.032;
 use AnyEvent::I3;
-use SwayScripts::Utils qw(find_current_ws_and_con find_named_child_cons);
+use i3::Utils qw(find_current_ws_and_con find_named_child_cons);
 
 my $tree = i3->get_tree->recv;
 my ($current_ws, $current_con) = find_current_ws_and_con($tree, undef);

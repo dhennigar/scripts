@@ -1,4 +1,4 @@
-package SwayScripts::Utils;
+package i3::Utils;
 
 # Utils.pm --- a set of helper functions for SwayScripts::Utils
 
