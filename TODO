@@ -1,2 +1,1 @@
-- Ensure compatibility with both i3 and sway in all scripts
 - Include flexible `find_node` subroutine in module file
