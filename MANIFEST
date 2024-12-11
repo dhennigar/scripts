@@ -1,5 +1,6 @@
 bin/i3-clam-shell
 bin/i3-cycle-focus
+bin/i3-file-picker
 bin/i3-new-workspace
 bin/i3-run-or-raise
 bin/i3-select-window
