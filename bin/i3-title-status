@@ -14,7 +14,9 @@
 # See the LICENSE file for more information.
 
 use 5.032;
-use AnyEvent;
+use strict;
+use warnings;
+use EV;
 use AnyEvent::I3;
 
 my $i3 = i3();
@@ -22,38 +24,42 @@ $i3->connect->recv or die "Error connecting to i3.";
 
 my %batthash = (
     "Discharging" => "-",
-    "Charging" => "+"
-    );
+    "Charging"    => "+"
+);
 
 sub update_and_send_commands {
-    chomp(my $timestring = qx(date "+%H:%M"));
-    chomp(my $battstring = qx(cat /sys/class/power_supply/BAT0/capacity));
-    chomp(my $battstatus = qx(cat /sys/class/power_supply/BAT0/status));
+    chomp( my $timestring = qx(date "+%H:%M") );
+    chomp( my $battstring = qx(cat /sys/class/power_supply/BAT0/capacity) );
+    chomp( my $battstatus = qx(cat /sys/class/power_supply/BAT0/status) );
     my $battsymbol = $batthash{$battstatus} // "";
 
     say "Updating title bar status info.";
     $i3->command('[all] title_format "%title"');
-    $i3->command(
-	'title_format "[' . $timestring . '][' . $battstring . '%' . $battsymbol . '] %title"'
-	);    
+    $i3->command( 'title_format "['
+          . $timestring . ']['
+          . $battstring . '%'
+          . $battsymbol
+          . '] %title"' );
 }
 
-$i3->subscribe({
-    window => sub {
-        my $event = shift;
-        if ($event->{change} eq 'focus') {
-            say "Window focus event detected.";
-	    update_and_send_commands();
+$i3->subscribe(
+    {
+        window => sub {
+            my $event = shift;
+            if ( $event->{change} eq 'focus' ) {
+                say "Window focus event detected.";
+                update_and_send_commands();
+            }
         }
     }
-})->recv->{success} or die "Error subscribing to events.";
+)->recv->{success} or die "Error subscribing to events.";
 
 my $timer = AnyEvent->timer(
-    after => 60,
+    after    => 60,
     interval => 60,
-    cb => sub {
-	say "60 seconds passed.";
-	update_and_send_commands();
+    cb       => sub {
+        say "60 seconds passed.";
+        update_and_send_commands();
     }
 );
 

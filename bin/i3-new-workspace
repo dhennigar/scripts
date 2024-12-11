@@ -15,6 +15,7 @@
 
 use 5.032;
 use Getopt::Std;
+use EV;
 use AnyEvent::I3;
 
 my %opts;
