@@ -1,5 +1,20 @@
 #!/usr/bin/env perl
 
+# i3-file-picker --- a basic file chooser implementation for dmenu
+
+# Copyright (C) 2024 Daniel Hennigar
+
+# Author: Daniel Hennigar
+
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of either:
+
+#   a) the Artistic License 2.0, or
+#   b) the GNU General Public License as published by the Free Software
+#      Foundation; either version 3, or (at your option) any later version.
+
+# See the LICENSE file for more information.
+
 use strict;
 use warnings;
 use File::Spec;

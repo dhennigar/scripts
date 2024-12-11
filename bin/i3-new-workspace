@@ -14,19 +14,24 @@
 # See the LICENSE file for more information.
 
 use 5.032;
+use strict;
+use warnings;
 use Getopt::Std;
 use EV;
 use AnyEvent::I3;
 
+# Get user options
 my %opts;
 getopts('t', \%opts); # -t "take"
 
+# Get the list of all occupied workspaces
 my $workspaces = i3->get_workspaces->recv;
 my %workspace_numbers;
 foreach my $workspace (@$workspaces) {
     $workspace_numbers{$workspace->{num}} = 1;
 }
 
+# Find the lowest unoccupied workspace number
 my $lowest_empty_workspace;
 my $max_workspace_number = scalar @$workspaces + 1;
 for my $i (1..$max_workspace_number) {
@@ -36,6 +41,8 @@ for my $i (1..$max_workspace_number) {
     }
 }
 
+# Focus the lowest empty workspace and (optionally) take the
+# currently focused window with you.
 if (defined $lowest_empty_workspace) {
     if ($opts{t}) {
 	i3->command("move to workspace " . $lowest_empty_workspace);

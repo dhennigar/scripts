@@ -19,14 +19,17 @@ use warnings;
 use EV;
 use AnyEvent::I3;
 
+# Connect to i3/sway
 my $i3 = i3();
 $i3->connect->recv or die "Error connecting to i3.";
 
+# Translation table for battery status
 my %batthash = (
     "Discharging" => "-",
     "Charging"    => "+"
 );
 
+# Get system status information and print to the focused window's title bar
 sub update_and_send_commands {
     chomp( my $timestring = qx(date "+%H:%M") );
     chomp( my $battstring = qx(cat /sys/class/power_supply/BAT0/capacity) );
@@ -42,6 +45,7 @@ sub update_and_send_commands {
           . '] %title"' );
 }
 
+# Subscribe to window events and update status when focus changes
 $i3->subscribe(
     {
         window => sub {
@@ -54,6 +58,7 @@ $i3->subscribe(
     }
 )->recv->{success} or die "Error subscribing to events.";
 
+# Also update status every 60 seconds to keep the clock accurate
 my $timer = AnyEvent->timer(
     after    => 60,
     interval => 60,

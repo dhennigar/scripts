@@ -17,16 +17,20 @@ use 5.032;
 use strict;
 use warnings;
 
+# Parse command line arguments
 if ( @ARGV < 2 ) {
     die "Usage: $0 <app_id or class> <command>\n";
 }
 my ( $identifier, $command ) = @ARGV;
 
+# Set appropriate command for i3 or sway
 my $msg = "i3-msg";
 if ( exists $ENV{"SWAYSOCK"} ) {
     $msg = "swaymsg";
 }
 
+# First try to focus the app by app_id, then class, then,
+# if both of those fail, execute the command
 my $focus_by_app_id = system( "$msg", "[app_id=$identifier] focus" ) == 0;
 unless ($focus_by_app_id) {
     my $focus_by_class = system( "$msg", "[class=$identifier] focus" ) == 0;
