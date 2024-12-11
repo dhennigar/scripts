@@ -25,10 +25,10 @@ if ( exists $ENV{"SWAYSOCK"} ) {
 }
 
 open my $file, '<', '/proc/acpi/button/lid/LID/state';
-my $state = index( <$file>, 'open' );
+my $state = <$file>;
 close $file;
 
-if ( $state != -1 ) {
+if ( $state =~ m/open/ ) {
     system("$msg output eDP-1 enable");
 }
 else {
