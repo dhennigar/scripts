@@ -1,0 +1,36 @@
+#!/bin/perl
+
+# i3-clam-shell --- turn laptop display on/off with lid switch events
+
+# Copyright (C) 2024 Daniel Hennigar
+
+# Author: Daniel Hennigar
+
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of either:
+
+#   a) the Artistic License 2.0, or
+#   b) the GNU General Public License as published by the Free Software
+#      Foundation; either version 3, or (at your option) any later version.
+
+# See the LICENSE file for more information.
+
+use 5.032;
+use strict;
+use warnings;
+
+my $msg = "i3-msg";
+if ( exists $ENV{"SWAYSOCK"} ) {
+    $msg = "swaymsg";
+}
+
+open my $file, '<', '/proc/acpi/button/lid/LID/state';
+my $state = index( <$file>, 'open' );
+close $file;
+
+if ( $state != -1 ) {
+    system("$msg output eDP-1 enable");
+}
+else {
+    system("$msg output eDP-1 disable");
+}
