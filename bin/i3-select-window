@@ -1,0 +1,90 @@
+#!/usr/bin/env perl
+
+use strict;
+use warnings;
+use AnyEvent::I3;
+use IPC::Open2;
+
+# Variables
+my $dmenu_cmd = 'dmenu -i -p "Window Switcher >"';
+
+# Connect to i3
+my $i3 = AnyEvent::I3->new;
+$i3->connect->recv or die "Failed to connect to i3.";
+
+# Get the tree
+my $tree_data = $i3->get_tree->recv;
+
+# Extract relevant information
+sub extract_windows {
+    my ($node, $output, $workspace) = @_;
+    my @windows;
+
+    # If the node is a window with app_id or shell, add it to the list
+    if (exists $node->{id} && (exists $node->{app_id} || exists $node->{shell})) {
+        push @windows, {
+            id        => $node->{id},
+            name      => $node->{name} // 'Unnamed',
+            app_id    => $node->{app_id} // 'Unknown App',
+            workspace => $workspace,
+            output    => $output
+        };
+    }
+
+    # Recurse into child nodes
+    for my $child (@{ $node->{nodes} // [] }) {
+        push @windows, extract_windows($child, $output, $workspace);
+    }
+
+    return @windows;
+}
+
+my %window_map;
+my @choices;
+
+# Traverse the tree
+for my $output_node (@{ $tree_data->{nodes} }) {
+    my $output_name = $output_node->{name};
+    for my $workspace_node (@{ $output_node->{nodes} }) {
+        my $workspace_name = $workspace_node->{name};
+        my @windows = extract_windows($workspace_node, $output_name, $workspace_name);
+        for my $window (@windows) {
+            my $choice = sprintf("%s [%s] %s (on %s)", $window->{name}, $window->{workspace}, $window->{app_id}, $window->{output});
+            push @choices, $choice;
+            $window_map{$choice} = $window->{id};
+        }
+    }
+}
+
+# Show dmenu and get selected option
+my $selected;
+{
+    # Use IPC::Open2 to communicate with dmenu
+    my ($dmenu_out, $dmenu_in);
+    my $pid = open2($dmenu_out, $dmenu_in, $dmenu_cmd) or die "Failed to open dmenu: $!";
+
+    # Set UTF-8 encoding for the filehandles
+    binmode($dmenu_in, ":encoding(UTF-8)");
+    binmode($dmenu_out, ":encoding(UTF-8)");
+
+    # Write the list of choices to dmenu
+    print $dmenu_in join("\n", @choices);
+    close($dmenu_in); # Close input after sending data
+
+    # Read the user's selection from dmenu
+    $selected = <$dmenu_out>;
+    close($dmenu_out); # Close output after reading data
+
+    waitpid($pid, 0); # Wait for dmenu process to finish
+}
+
+chomp $selected if $selected;
+exit unless $selected;
+
+# Get the corresponding window ID
+if (my $window_id = $window_map{$selected}) {
+    # Focus the selected window
+    $i3->command("[con_id=$window_id] focus")->recv;
+} else {
+    warn "No matching window found for selection: $selected";
+}
