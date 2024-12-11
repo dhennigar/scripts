@@ -1,0 +1,13 @@
+bin/i3-clam-shell
+bin/i3-cycle-focus
+bin/i3-new-workspace
+bin/i3-run-or-raise
+bin/i3-select-window
+bin/i3-title-status
+lib/i3/Utils.pm
+LICENSE
+Makefile.PL
+MANIFEST			This list of files
+README
+t/00-load.t
+TODO
