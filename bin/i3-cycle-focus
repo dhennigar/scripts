@@ -1,6 +1,6 @@
 #!/usr/bin/env perl
 
-# sway-cycle-focus.pl --- emulate "Alt-Tab" behaviour in sway/i3
+# i3-cycle-focus --- emulate "Alt-Tab" behaviour in sway/i3
 
 # Copyright (C) 2024 Daniel Hennigar
 
@@ -18,29 +18,32 @@
 use 5.032;
 use strict;
 use warnings;
+use Getopt::Long;
 use AnyEvent::I3;
 use i3::Utils qw(find_node find_nodes);
 
-# Get tree data from i3/sway
+my $reverse = 0;
+GetOptions('reverse' => \$reverse) or die "Usage: $0 [--reverse]\n";
+
 my $tree = i3->get_tree->recv;
 
-# Find the current container and its workspace
 my $is_focused = sub {
     my ($node) = @_;
     return $node->{focused};
 };
 my ( $focused, undef, $workspace ) = find_node( $tree, $is_focused );
 
-# Find all the workspace's named child nodes
 my $has_name = sub {
     my ($node) = @_;
     return $node->{name} && $node->{name} ne '';
 };
-my $siblings = find_nodes( $workspace, $has_name );
+my @siblings = find_nodes( $workspace, $has_name );
+
+@siblings = reverse @siblings if $reverse;
 
 # Iterate through list of siblings and focus the one after currently focused
 my $index = 0;
-$index++ while $siblings->[$index]->{id} != $focused->{id};
-my $next_id = $siblings->[ ( $index + 1 ) % @$siblings ]->{id};
+$index++ while $siblings[$index]{id} != $focused->{id};
+my $next_id = $siblings[ ( $index + 1 ) % @siblings ]{id};
 say "next id: $next_id";
 i3->command("[con_id=$next_id] focus");
