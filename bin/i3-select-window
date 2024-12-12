@@ -30,15 +30,11 @@ GetOptions(
 ) or die "$usage";
 die "$usage" if $help || @ARGV;
 
-
-# Connect to i3
 my $i3 = AnyEvent::I3->new;
-$i3->connect->recv or die "Failed to connect to i3.";
+$i3->connect->recv or die "Failed to connect to i3";
 
-# Get the tree
 my $tree_data = $i3->get_tree->recv;
 
-# Extract relevant information
 sub extract_windows {
     my ( $node, $output, $workspace ) = @_;
     my @windows;
