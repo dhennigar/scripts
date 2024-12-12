@@ -19,31 +19,36 @@ use strict;
 use warnings;
 use Exporter 'import';
 
-our @EXPORT_OK = qw(find_current_ws_and_con find_named_child_cons);
+our @EXPORT_OK = qw(find_node find_nodes find_focused find_workspace);
 
-sub find_current_ws_and_con {
-    my ( $node, $current_workspace ) = @_;
-    $current_workspace = $node if $node->{type} eq 'workspace';
+# Return the first node which matches criteria
+sub find_node {
+    my ( $node, $criteria, $parent, $workspace ) = @_;
+    
+    $workspace = $node if $node->{type} eq 'workspace';
 
-    return ( $current_workspace, $node ) if $node->{focused};
-
+    if ($criteria->($node)) {
+	return ( $node, $parent, $workspace );
+    }
+    
     for my $child ( @{ $node->{nodes} || [] } ) {
-        my ( $ws, $con ) =
-          find_current_ws_and_con( $child, $current_workspace );
-        return ( $ws, $con ) if $con;
+	my ( $target_node, $parent_node, $workspace_node ) =
+	  find_node( $child, $criteria, $node, $workspace );
+	return ( $target_node, $parent_node, $workspace_node ) if $target_node;
     }
 }
 
-sub find_named_child_cons {
-    my ( $node, $windows ) = @_;
-    $windows //= [];
-    push @$windows, $node->{id} if $node->{name} && $node->{type} eq 'con';
-    if ( $node->{nodes} ) {    # && ref $node->{nodes} eq 'ARRAY') {
+# Return all child nodes matching criteria
+sub find_nodes {
+    my ( $node, $criteria, $children ) = @_;
+    $children //= [];
+    push @$children, $node if $criteria->( $node );
+    if ( $node->{nodes} ) {
         foreach my $child ( @{ $node->{nodes} } ) {
-            find_named_child_cons( $child, $windows );
+            find_nodes( $child, $criteria, $children );
         }
     }
-    return $windows;
+    return $children;
 }
 
 1;    # modules must return a true value

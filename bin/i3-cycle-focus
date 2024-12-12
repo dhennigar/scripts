@@ -18,16 +18,29 @@
 use 5.032;
 use strict;
 use warnings;
-use EV;
 use AnyEvent::I3;
-use i3::Utils qw(find_current_ws_and_con find_named_child_cons);
+use i3::Utils qw(find_node find_nodes);
 
+# Get tree data from i3/sway
 my $tree = i3->get_tree->recv;
-my ( $current_ws, $current_con ) = find_current_ws_and_con( $tree, undef );
-my $cons_in_workspace = find_named_child_cons($current_ws);
 
+# Find the current container and its workspace
+my $is_focused = sub {
+    my ($node) = @_;
+    return $node->{focused};
+};
+my ( $focused, $parent, $workspace ) = find_node( $tree, $is_focused );
+
+# Find all the workspace's named child nodes
+my $has_name = sub {
+    my ($node) = @_;
+    return ( $node->{name} && $node->{type} eq 'con' );
+};
+my $siblings = find_nodes( $workspace, $has_name );
+
+# Iterate through list of siblings and focus the one after currently focused
 my $index = 0;
-$index++ while $cons_in_workspace->[$index] != $current_con->{id};
-my $next_id = $cons_in_workspace->[ ( $index + 1 ) % @$cons_in_workspace ];
+$index++ while $siblings->[$index]->{id} != $focused->{id};
+my $next_id = $siblings->[ ( $index + 1 ) % @$siblings ]->{id};
 say "next id: $next_id";
 i3->command("[con_id=$next_id] focus");
