@@ -6,22 +6,25 @@ package i3::Utils;
 
 # Author: Daniel Hennigar
 
-# This program is dual-licensed under the GNU General Public License,
-# version 3, or the Artistic License, version 2.0. You may choose to
-# use, modify, and redistribute it under either of these licenses.
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of either:
 
-# Commentary:
-# SwayScripts aims to extend the functionality your Linux window manager.
-# It is compatible with sway/i3, and communicates with them through their
-# IPC interfaces via the AnyEvent::I3 module.
+#   a) the Artistic License 2.0, or
+#   b) the GNU General Public License as published by the Free Software
+#      Foundation; either version 3, or (at your option) any later version.
+
+# See the LICENSE file for more information.
 
 use strict;
 use warnings;
 use Exporter 'import';
 
-our @EXPORT_OK = qw(find_node find_nodes find_focused find_workspace);
+our @EXPORT_OK = qw(find_node find_nodes);
 
-# Return the first node which matches criteria
+# Expects $node (an i3 node object) and $criteria, itself a subroutine
+# which takes an i3 node and returns a boolean value. Returns the
+# first node matching $criteria, its parent node, and a workspace if
+# one exists as an ancestor.
 sub find_node {
     my ( $node, $criteria, $parent, $workspace ) = @_;
     
@@ -38,7 +41,7 @@ sub find_node {
     }
 }
 
-# Return all child nodes matching criteria
+# Similar to find_node(), but returns all child nodes matching criteria
 sub find_nodes {
     my ( $node, $criteria, $children ) = @_;
     $children //= [];

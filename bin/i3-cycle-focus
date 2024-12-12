@@ -29,7 +29,7 @@ my $is_focused = sub {
     my ($node) = @_;
     return $node->{focused};
 };
-my ( $focused, $parent, $workspace ) = find_node( $tree, $is_focused );
+my ( $focused, undef, $workspace ) = find_node( $tree, $is_focused );
 
 # Find all the workspace's named child nodes
 my $has_name = sub {
