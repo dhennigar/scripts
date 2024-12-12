@@ -17,11 +17,19 @@
 
 use strict;
 use warnings;
+use Getopt::Long;
 use AnyEvent::I3;
 use IPC::Open2;
 
-# Variables
-my $dmenu_cmd = 'dmenu -i -p "Window Switcher >"';
+my $usage = "Usage: $0 [--dmenu-command <command>] [--help]\n";
+my $dmenu_cmd = 'dmenu -i -p "Select window > "';
+my $help = 0;
+GetOptions(
+    'dmenu-command' => \$dmenu_cmd,
+    'help' => \$help
+) or die "$usage";
+die "$usage" if $help || @ARGV;
+
 
 # Connect to i3
 my $i3 = AnyEvent::I3->new;

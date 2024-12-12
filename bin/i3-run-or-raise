@@ -17,13 +17,11 @@ use 5.032;
 use strict;
 use warnings;
 
-# Parse command line arguments
 if ( @ARGV < 2 ) {
     die "Usage: $0 <app_id or class> <command>\n";
 }
 my ( $identifier, $command ) = @ARGV;
 
-# Set appropriate command for i3 or sway
 my $msg = "i3-msg";
 if ( exists $ENV{"SWAYSOCK"} ) {
     $msg = "swaymsg";
