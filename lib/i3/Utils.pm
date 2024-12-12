@@ -43,13 +43,6 @@ sub _finds {
 
     push @$children, $node if !$is_root && $criteria->( $node );
     
-    # if ( $node->{nodes} ) {
-    #     foreach my $child ( @{ $node->{nodes} } ) {
-    #         _finds( $child, $criteria, 0, $children );
-    #     }
-    # }
-    
-    # Recurse into child nodes and floating nodes
     foreach my $child ( @{ $node->{nodes} || [] }, @{ $node->{floating_nodes} || [] } ) {
         _finds( $child, $criteria, 0, $children );
     }
@@ -70,7 +63,6 @@ sub find_nodes {
     die "First argument must be a node hashref" unless ref $node eq 'HASH';
     die "Second argument must be a code reference" unless ref $criteria eq 'CODE';
 
-    # return _finds( $node, $criteria, 1, [] );
     return @{ _finds( $node, $criteria, 1, [] ) };
 }
 
