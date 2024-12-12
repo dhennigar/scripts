@@ -15,17 +15,15 @@ package i3::Utils;
 
 # See the LICENSE file for more information.
 
+use 5.040;
 use strict;
 use warnings;
+use Data::Dumper;;
 use Exporter 'import';
 
 our @EXPORT_OK = qw(find_node find_nodes);
 
-# Expects $node (an i3 node object) and $criteria, itself a subroutine
-# which takes an i3 node and returns a boolean value. Returns the
-# first node matching $criteria, its parent node, and a workspace if
-# one exists as an ancestor.
-sub find_node {
+sub _find {
     my ( $node, $criteria, $parent, $workspace ) = @_;
     
     $workspace = $node if $node->{type} eq 'workspace';
@@ -36,22 +34,39 @@ sub find_node {
     
     for my $child ( @{ $node->{nodes} || [] } ) {
 	my ( $target_node, $parent_node, $workspace_node ) =
-	  find_node( $child, $criteria, $node, $workspace );
+	  _find( $child, $criteria, $node, $workspace );
 	return ( $target_node, $parent_node, $workspace_node ) if $target_node;
     }
 }
 
-# Similar to find_node(), but returns all child nodes matching criteria
-sub find_nodes {
-    my ( $node, $criteria, $children ) = @_;
-    $children //= [];
-    push @$children, $node if $criteria->( $node );
+sub _finds {
+    my ( $node, $criteria, $is_root, $children ) = @_;
+
+    push @$children, $node if !$is_root && $criteria->( $node );
+    
     if ( $node->{nodes} ) {
         foreach my $child ( @{ $node->{nodes} } ) {
-            find_nodes( $child, $criteria, $children );
+            _finds( $child, $criteria, 0, $children );
         }
     }
     return $children;
+}
+
+sub find_node {
+    my ( $node, $criteria ) = @_;
+
+    die "First argument must be a node hashref" unless ref $node eq 'HASH';
+    die "Second argument must be a code reference" unless ref $criteria eq 'CODE';
+
+    return _find( $node, $criteria, undef, undef);
+}
+sub find_nodes {
+    my ( $node, $criteria ) = @_;
+
+    die "First argument must be a node hashref" unless ref $node eq 'HASH';
+    die "Second argument must be a code reference" unless ref $criteria eq 'CODE';
+
+    return _finds( $node, $criteria, 1, [] );
 }
 
 1;    # modules must return a true value
