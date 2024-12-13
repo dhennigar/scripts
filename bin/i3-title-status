@@ -16,24 +16,32 @@
 use 5.032;
 use strict;
 use warnings;
+use Getopt::Long;
+use File::Spec;
 use EV;
 use AnyEvent::I3;
 
-# Connect to i3/sway
+my $usage = "Usage: $0 [--help]";
+my $help  = 0;
+GetOptions( 'help' => \$help )
+  or die "$usage";
+die "$usage" if $help;
+
+# Connect to i3 and die if connection is lost
 my $i3 = i3();
 $i3->connect->recv or die "Error connecting to i3.";
-
-# Translation table for battery status
-my %batthash = (
-    "Discharging" => "-",
-    "Charging"    => "+"
-);
+say "Connected to i3.";
 
 # Get system status information and print to the focused window's title bar
 sub update_and_send_commands {
     chomp( my $timestring = qx(date "+%H:%M") );
     chomp( my $battstring = qx(cat /sys/class/power_supply/BAT0/capacity) );
     chomp( my $battstatus = qx(cat /sys/class/power_supply/BAT0/status) );
+
+    my %batthash = (
+        "Discharging" => "-",
+        "Charging"    => "+"
+    );
     my $battsymbol = $batthash{$battstatus} // "";
 
     say "Updating title bar status info.";
@@ -45,7 +53,7 @@ sub update_and_send_commands {
           . '] %title"' );
 }
 
-# Subscribe to window events and update status when focus changes
+# Subscribe to window focus events and update status info
 $i3->subscribe(
     {
         window => sub {
@@ -54,17 +62,42 @@ $i3->subscribe(
                 say "Window focus event detected.";
                 update_and_send_commands();
             }
+        },
+        tick => sub {
+            my $tick = shift;
+            if ( !$tick->{first} && $tick->{payload} eq 'title-status' ) {
+                update_and_send_commands();
+            }
+        },
+        shutdown => sub {
+            say "Shutting down i3-title-status.";
+            exit(0);
         }
     }
-)->recv->{success} or die "Error subscribing to events.";
+)->recv->{success} or die "Error subscribing to window events.";
 
 # Also update status every 60 seconds to keep the clock accurate
-my $timer = AnyEvent->timer(
+my $timer;
+$timer = AnyEvent->timer(
     after    => 60,
     interval => 60,
     cb       => sub {
         say "60 seconds passed.";
-        update_and_send_commands();
+
+        # Use a non-blocking callback to handle the response of send_tick
+        $i3->send_tick('title-status')->cb(
+            sub {
+                my $response = shift->recv;
+
+                unless ( $response->{success} ) {
+                    warn "Lost connection to i3.";
+
+                    # Clean up the timer
+                    undef $timer;
+                    exit(1);    # Exit the script gracefully
+                }
+            }
+        );
     }
 );
 
