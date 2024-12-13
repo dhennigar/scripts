@@ -79,7 +79,7 @@ $i3->subscribe(
 # Also update status every 60 seconds to keep the clock accurate
 my $timer;
 $timer = AnyEvent->timer(
-    after    => 60,
+    after    => 0,
     interval => 60,
     cb       => sub {
         say "60 seconds passed.";
