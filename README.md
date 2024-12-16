@@ -4,12 +4,18 @@ A collection of Perl scripts for controlling i3/sway.
 
 ## Installation
 
-- `git clone https://github.com/dhennigar/i3-utils`
-- `cd i3-utils`
-- `perl Makefile.PL`
-- `make`
-- `make test`
-- `make install`
+`git clone https://github.com/dhennigar/i3-utils`
+
+`cd i3-utils`
+
+`perl Makefile.PL`
+
+`make`
+
+`make test`
+
+`make install`
+
 
 ## Usage
 
