@@ -1,9 +1,9 @@
-i3::Utils - a collection of Perl scripts for controlling i3/sway.
+			i3::Utils
 
-This repository contains severals usefull scripts which extend the
-functionality of the i3 window manager or sway wayland compositor.
-Any of the scripts may be run with '--help' for usage details. The
-i3::Utils module contains a few useful functions for your own
+This repository contains severals usefull scripts which
+extend the functionality i3/sway. Any of the scripts may
+be run with '--help' for usage details. The i3::Utils
+module contains a few useful functions for your own 
 scripting like 'find_node()'.
 
 Dependencies:
