@@ -4,7 +4,7 @@ A collection of Perl scripts for controlling [i3](https://i3wm.org) and [sway](h
 
 ## Installation
 
-Ensure [AnyEvent::I3](https://metacpan.org/pod/AnyEvent::I3) is installed.
+Ensure [AnyEvent::I3](https://metacpan.org/pod/AnyEvent::I3) is installed (e.g., via `cpanm AnyEvent::I3`).
 
 ```bash
 git clone https://github.com/dhennigar/i3-utils
