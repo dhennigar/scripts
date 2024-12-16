@@ -1,6 +1,6 @@
 # i3::Utils
 
-A collection of Perl scripts for controlling i3/sway.
+A collection of Perl scripts for controlling [i3](https://i3wm.org) and [sway](https://swaywm.org).
 
 ## Installation
 
