@@ -22,7 +22,8 @@ use Getopt::Long;
 use AnyEvent::I3;
 use i3::Utils qw(find_node find_nodes);
 
-my $usage = "Usage: $0 [--reverse] [--help]\n";
+my $usage = "Usage: $0 [--reverse] [--help]
+See 'perldoc $0' for documentation.\n";
 my $reverse = 0;
 my $help = 0;
 GetOptions(
@@ -56,7 +57,11 @@ i3-cycle-focus - Cycle through the windows on the current i3/sway workspace
 
 =head1 SYNOPSIS
 
-  i3-cycle-focus [--reverse] [--help]
+=over 4
+
+i3-cycle-focus [--reverse] [--help]
+
+=back
 
 =head1 DESCRIPTION
 

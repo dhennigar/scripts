@@ -16,6 +16,14 @@
 use 5.032;
 use strict;
 use warnings;
+use Getopt::Long;
+
+my $usage = "Usage: $0 [--help]
+See 'perldoc i3-run-or-raise' for documentation.\n";
+my $help = 0;
+
+GetOptions( 'help' => \$help ) or die "$usage";
+die "$usage" if $help;
 
 if ( @ARGV < 2 ) {
     die "Usage: $0 <app_id or class> <command>\n";
@@ -27,8 +35,6 @@ if ( exists $ENV{"SWAYSOCK"} ) {
     $msg = "swaymsg";
 }
 
-# First try to focus the app by app_id, then class, then,
-# if both of those fail, execute the command
 my $focus_by_app_id = system( "$msg", "[app_id=$identifier] focus" ) == 0;
 unless ($focus_by_app_id) {
     my $focus_by_class = system( "$msg", "[class=$identifier] focus" ) == 0;

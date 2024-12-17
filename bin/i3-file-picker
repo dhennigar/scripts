@@ -22,7 +22,8 @@ use Cwd;
 use IPC::Open2;
 use Getopt::Long;
 
-my $usage = "Invalid options. Usage: $0 [--show-hidden | -s]\n";
+my $usage = "Invalid options. Usage: $0 [--show-hidden | -s]
+See 'perldoc $0' for documentation.\n";
 my $picker_cmd  = 'dmenu -i';    # Change this to 'dmenu' if desired
 my $show_hidden = 0;
 my $help = 0;

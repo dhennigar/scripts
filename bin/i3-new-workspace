@@ -19,7 +19,8 @@ use warnings;
 use Getopt::Long;
 use AnyEvent::I3;
 
-my $usage = "Usage: $0 [--take] [--help]\n";
+my $usage = "Usage: $0 [--take] [--help]
+See perldoc 'i3-new-workspace' for documentation.\n";
 my $take = 0;
 my $help = 0;
 GetOptions(

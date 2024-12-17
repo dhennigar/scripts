@@ -21,7 +21,8 @@ use Getopt::Long;
 use AnyEvent::I3;
 use IPC::Open2;
 
-my $usage = "Usage: $0 [--dmenu-command <command>] [--help]\n";
+my $usage = "Usage: $0 [--dmenu-command <command>] [--help]
+See 'perldoc $0' for documentation.\n";
 my $dmenu_cmd = 'dmenu -i -p "Select window > "';
 my $help = 0;
 GetOptions(

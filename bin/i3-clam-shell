@@ -20,9 +20,10 @@ use strict;
 use warnings;
 use Getopt::Long;
 
-my $usage = "Usage: $0 [--help]\n See 'perldoc i3-clam-shell for documentation.";
+my $usage = "Usage: $0 [--help]
+See 'perldoc i3-clam-shell for documentation.\n";
 my $help = 0;
-GetOptions( 'help => \$help') or die "$usage";
+GetOptions( 'help => \$help' ) or die "$usage";
 die "$usage" if $help;
 
 my $msg = "i3-msg";
