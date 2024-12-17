@@ -37,3 +37,27 @@ unless ($focus_by_app_id) {
         system( "$msg", "exec", $command );
     }
 }
+
+=pod
+
+=head1 NAME
+
+i3-run-or-raise - Focus or launch an application in i3/sway.
+
+=head1 SYNOPSIS
+
+  i3-run-or-raise <app_id or class> <command>
+
+=head1 DESCRIPTION
+
+Focuses a window matching the app_id or class. If none are found, runs the specified command.
+
+=head1 AUTHOR
+
+Daniel Hennigar
+
+=head1 LICENSE
+
+Licensed under the Artistic License 2.0 and GNU GPL.
+
+=cut

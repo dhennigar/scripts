@@ -1,6 +1,6 @@
 #!/usr/bin/perl
 
-# sway-title-status.pl --- print status info in the focused window title bar
+# i3-title-status.pl --- print status info in the focused window title bar
 
 # Copyright (c) 2024 Daniel Hennigar
 
@@ -17,43 +17,46 @@ use 5.032;
 use strict;
 use warnings;
 use Getopt::Long;
-use File::Spec;
-use EV;
 use AnyEvent::I3;
 
-my $usage = "Usage: $0 [--help]";
+my $usage = "Usage: $0 [--help] [--format '<format string>']";
 my $help  = 0;
-GetOptions( 'help' => \$help )
+my $format = '[%clock][%battery_charge% %battery_status] %title';
+
+GetOptions(
+    'help' => \$help,
+    'format' => \$format
+)
   or die "$usage";
 die "$usage" if $help;
 
-# Connect to i3 and die if connection is lost
 my $i3 = i3();
 $i3->connect->recv or die "Error connecting to i3.";
 say "Connected to i3.";
 
-# Get system status information and print to the focused window's title bar
 sub update_and_send_commands {
-    chomp( my $timestring = qx(date "+%H:%M") );
-    chomp( my $battstring = qx(cat /sys/class/power_supply/BAT0/capacity) );
-    chomp( my $battstatus = qx(cat /sys/class/power_supply/BAT0/status) );
+    chomp( my $clock = qx(date "+%H:%M") );
+    chomp( my $battery_charge = qx(cat /sys/class/power_supply/BAT0/capacity) );
+    chomp( my $battery_status = qx(cat /sys/class/power_supply/BAT0/status) );
 
     my %batthash = (
         "Discharging" => "-",
         "Charging"    => "+"
     );
-    my $battsymbol = $batthash{$battstatus} // "";
+    my $battery_symbol = $batthash{$battery_status} // "";
+
+    my $status = $format;
+    $status =~ s/%clock/$clock/g;
+    $status =~ s/%battery_charge/$battery_charge/g;
+    $status =~ s/%battery_status/$battery_status/g;    
+    $status =~ s/%battery_symbol/$battery_symbol/g;    
 
     say "Updating title bar status info.";
     $i3->command('[all] title_format "%title"');
-    $i3->command( 'title_format "['
-          . $timestring . ']['
-          . $battstring . '%'
-          . $battsymbol
-          . '] %title"' );
+    $i3->command( "title_format $status");
+
 }
 
-# Subscribe to window focus events and update status info
 $i3->subscribe(
     {
         window => sub {
@@ -76,7 +79,6 @@ $i3->subscribe(
     }
 )->recv->{success} or die "Error subscribing to window events.";
 
-# Also update status every 60 seconds to keep the clock accurate
 my $timer;
 $timer = AnyEvent->timer(
     after    => 0,
@@ -102,3 +104,55 @@ $timer = AnyEvent->timer(
 );
 
 AE::cv->recv
+
+__END__
+
+=pod
+
+=head1 NAME
+
+i3-title-status - Print system information to the focused window's title bar
+
+=head1 SYNOPSIS
+
+  i3-title-status [--format '<format string>'] [--help]
+
+=head1 DESCRIPTION
+
+Prints system status information into the title bar of the currently focused window. Updates on window focus events and every 60 seconds. Closes if the connection to i3 is lost.
+
+=head1 OPTIONS
+
+=over 4
+
+=item * --help
+
+=item * --format
+
+Specify a custom format for the status information. Valid substitutions are:
+
+=over 4
+
+=item * %title
+
+=item * %clock
+
+=item * %battery_level
+
+=item * %battery_status
+
+=item * %battery_symbol
+
+=back
+
+=back
+
+=head1 AUTHOR
+
+Daniel Hennigar
+
+=head1 LICENSE
+
+Licensed under the Artistic License 2.0 and GNU GPL.
+
+=cut

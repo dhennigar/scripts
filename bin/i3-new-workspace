@@ -1,6 +1,6 @@
 #!/usr/bin/perl
 
-# sway-new-workspace.pl --- open the next available empty workspace
+# i3-new-workspace.pl --- open the next available empty workspace
 
 # Copyright (c) 2024 Daniel Hennigar
 
@@ -28,14 +28,12 @@ GetOptions(
 ) or die "$usage";
 die "$usage" if $help;
 
-# Get the list of all occupied workspaces
 my $workspaces = i3->get_workspaces->recv;
 my %workspace_numbers;
 foreach my $workspace (@$workspaces) {
     $workspace_numbers{$workspace->{num}} = 1;
 }
 
-# Find the lowest unoccupied workspace number
 my $lowest_empty_workspace;
 my $max_workspace_number = scalar @$workspaces + 1;
 for my $i (1..$max_workspace_number) {
@@ -45,11 +43,45 @@ for my $i (1..$max_workspace_number) {
     }
 }
 
-# Focus the lowest empty workspace and (optionally) take the
-# currently focused window with you.
 if (defined $lowest_empty_workspace) {
     if ($take) {
 	i3->command("move to workspace " . $lowest_empty_workspace);
     }
     i3->command("workspace " . $lowest_empty_workspace);
 }
+
+__END__
+
+=pod
+
+=head1 NAME
+
+i3-new-workspace - Open the lowest available empty workspace
+
+=head1 SYNOPSIS
+
+  i3-new-workspace [--take] [--help]
+
+=head1 DESCRIPTION
+
+Find the lowest numbered workspace with no windows and switch to it. Optionally, take the currently focused window with you to that workspace.
+
+=head1 OPTIONS
+
+=over 4
+
+=item * --help
+
+=item * --take - bring the current window with you
+
+=back
+
+=head1 AUTHOR
+
+Daniel Hennigar
+
+=head1 LICENSE
+
+Licensed under the Artistic License 2.0 and GNU GPL.
+
+=cut

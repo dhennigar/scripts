@@ -18,22 +18,65 @@
 use 5.032;
 use strict;
 use warnings;
+use Getopt::Long;
 
-# Set the appropriate command for i3 or sway
+my $usage = "Usage: $0 [--help]\n See 'perldoc i3-clam-shell for documentation.";
+my $help = 0;
+GetOptions( 'help => \$help') or die "$usage";
+die "$usage" if $help;
+
 my $msg = "i3-msg";
 if ( exists $ENV{"SWAYSOCK"} ) {
     $msg = "swaymsg";
 }
 
-# Get the current state of the laptop lid switch
 open my $lid_state_file, '<', '/proc/acpi/button/lid/LID/state';
 my $lid_state = <$lid_state_file>;
 close $lid_state_file;
 
-# Turn laptop display on/off based on lid switch state
 if ( $lid_state =~ m/open/ ) {
     system("$msg output eDP-1 enable");
 }
 else {
     system("$msg output eDP-1 disable");
 }
+
+__END__
+
+=pod
+
+=head1 NAME
+
+i3-clam-shell - a simple script to ensure that laptop screens stay on/off when i3/sway are in "clamshell mode", even after a reload.
+
+=head1 SYNOPSIS
+
+  i3-clam-shell [--help]
+
+=head1 DESCRIPTION
+
+Triggered by a i3/sway reload, this script will ensure that the displays are powered on and off as appropriate for a "clamshell mode", i.e., when the laptop lid is close the internal monitor should stay powered off. Example configuration:
+
+=over 4
+
+exec_always i3-clam-shell
+
+=back
+
+=head1 OPTIONS
+
+=over 4
+
+=item * --help
+
+=back
+
+=head1 AUTHOR
+
+Daniel Hennigar
+
+=head1 LICENSE
+
+Licensed under the Artistic License 2.0 and GNU GPL.
+
+=cut

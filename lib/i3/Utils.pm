@@ -66,4 +66,46 @@ sub find_nodes {
     return @{ _finds( $node, $criteria, 1, [] ) };
 }
 
-1;    # modules must return a true value
+1;
+
+=pod
+
+=head1 NAME
+
+i3::Utils - Utility functions for traversing and querying the i3 window manager tree.
+
+=head1 DESCRIPTION
+
+This module provides utility functions for finding and querying nodes in the i3/sway tree structure using the AnyEvent::I3 module.
+
+=head1 FUNCTIONS
+
+=head2 find_node
+
+  my ($node, $parent, $workspace) = find_node($tree, sub { $_[0]->{name} eq 'example' });
+
+Recursively searches the i3 tree for the first node that matches a given criteria. The criteria should be a code reference that evaluates to true for the desired node. Returns the target node, its parent node, and (if applicable) its parent workspace node.
+
+=head2 find_nodes
+
+  my @nodes = find_nodes($tree, sub { $_[0]->{type} eq 'workspace' });
+
+Like find_node(), but returns a list of all nodes that match the criteria.
+
+=head1 DEPENDENCIES
+
+=over 4
+
+=item * L<AnyEvent::I3|https://metacpan.org/pod/AnyEvent::I3>
+
+=back
+
+=head1 AUTHOR
+
+Daniel Hennigar
+
+=head1 LICENSE
+
+This module is licensed under the Artistic License 2.0 and the GNU General Public License.
+
+=cut

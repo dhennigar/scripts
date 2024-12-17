@@ -1,10 +1,10 @@
 			i3::Utils
 
-This repository contains severals usefull scripts which
-extend the functionality i3/sway. Any of the scripts may
-be run with '--help' for usage details. The i3::Utils
-module contains a few useful functions for your own 
-scripting like 'find_node()'.
+This repository contains severals scripts which extend
+the functionality i3/sway. Any of the scripts may be
+run with '--help' for usage details. The i3::Utils module
+contains a few useful functions for your own scripting 
+like 'find_node()'.
 
 Dependencies:
 

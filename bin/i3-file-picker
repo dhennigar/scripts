@@ -22,15 +22,19 @@ use Cwd;
 use IPC::Open2;
 use Getopt::Long;
 
-# Variables
+my $usage = "Invalid options. Usage: $0 [--show-hidden | -s]\n";
 my $picker_cmd  = 'dmenu -i';    # Change this to 'dmenu' if desired
 my $show_hidden = 0;
+my $help = 0;
 
-# Parse command-line options
-GetOptions( 'show-hidden|s' => \$show_hidden, )
-  or die "Invalid options. Usage: $0 [--show-hidden | -s]\n";
+GetOptions(
+    'dmenu-command|d' => \$picker_cmd,
+    'show-hidden|s' => \$show_hidden,
+    'help|h' => \$help,
+	)
+  or die "$usage";
+die "$usage" if $help;
 
-# Function to run a picker and get user selection
 sub run_picker {
     my @options = @_;
     return unless @options;
@@ -39,11 +43,9 @@ sub run_picker {
     my $pid = open2( $picker_out, $picker_in, $picker_cmd )
       or die "Failed to open picker: $!";
 
-    # Send options to the picker
     print $picker_in join( "\n", @options );
     close($picker_in);
 
-    # Get the user's selection
     my $selection = <$picker_out>;
     close($picker_out);
     waitpid( $pid, 0 );
@@ -52,43 +54,73 @@ sub run_picker {
     return $selection;
 }
 
-# Start in the user's home directory
 my $current_dir = $ENV{HOME} or die "HOME environment variable not set.";
 
 while (1) {
 
-    # Get the contents of the current directory
     opendir( my $dh, $current_dir )
       or die "Failed to open directory '$current_dir': $!";
     my @entries = sort readdir($dh);
     closedir($dh);
 
-    # Keep '.' and '..' but filter hidden files unless --show-hidden is enabled
     @entries = grep { $_ =~ /^\.\.?$|^[^\.]/ || $show_hidden } @entries;
 
-    # Prepend directory names with a slash for differentiation
     @entries =
       map { -d File::Spec->catfile( $current_dir, $_ ) ? "$_/" : $_ } @entries;
 
-    # Run the picker
     my $choice = run_picker(@entries);
     last unless defined $choice;
 
-    # Remove trailing slash if it's a directory
     my $is_directory = ( $choice =~ s{/$}{} );
 
     if ($is_directory) {
 
-        # Change to the selected directory
         $current_dir = File::Spec->catfile( $current_dir, $choice );
         $current_dir = Cwd::abs_path($current_dir)
           or die "Failed to resolve path: $!";
     }
     else {
-        # Open the selected file
         my $file_path = File::Spec->catfile( $current_dir, $choice );
         system( 'xdg-open', $file_path ) == 0
           or warn "Failed to open file '$file_path': $!";
         last;
     }
 }
+
+__END__
+
+=pod
+
+=head1 NAME
+
+i3-file-picker - use dmenu (or equivalent) as a simple file explorer
+
+=head1 SYNOPSIS
+
+  i3-new-workspace [--show-hidden] [dmenu-command '<command>'][--help]
+
+=head1 DESCRIPTION
+
+Use dmenu, or a compatible menu program like rofi, as a simple file picker starting in the user's $HOME directory. Once a file is chosen, it will be opened with xdg-open.
+
+=head1 OPTIONS
+
+=over 4
+
+=item * --help
+
+=item * --show-hidden - show hidden files begining with "."
+
+=item * --dmenu-command '<command>' - specify an alternative to dmenu (e.g., 'fuzzel -d')
+
+=back
+
+=head1 AUTHOR
+
+Daniel Hennigar
+
+=head1 LICENSE
+
+Licensed under the Artistic License 2.0 and GNU GPL.
+
+=cut
