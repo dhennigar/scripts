@@ -23,18 +23,15 @@ use Exporter 'import';
 our @EXPORT_OK = qw(find_node find_nodes);
 
 sub _find {
-    my ( $node, $criteria, $parent, $workspace ) = @_;
+    my ( $node, $criteria ) = @_;
     
-    $workspace = $node if $node->{type} eq 'workspace';
-
     if ($criteria->($node)) {
-	return ( $node, $parent, $workspace );
+	return $node;
     }
     
     for my $child ( @{ $node->{nodes} || [] } ) {
-	my ( $target_node, $parent_node, $workspace_node ) =
-	  _find( $child, $criteria, $node, $workspace );
-	return ( $target_node, $parent_node, $workspace_node ) if $target_node;
+	my $target_node =_find( $child, $criteria );
+	return $target_node if $target_node;
     }
 }
 
@@ -57,6 +54,7 @@ sub find_node {
 
     return _find( $node, $criteria, undef, undef);
 }
+
 sub find_nodes {
     my ( $node, $criteria ) = @_;
 

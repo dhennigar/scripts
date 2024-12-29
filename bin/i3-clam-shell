@@ -15,7 +15,7 @@
 
 # See the LICENSE file for more information.
 
-use 5.032;
+use 5.040;
 use strict;
 use warnings;
 use Getopt::Long;

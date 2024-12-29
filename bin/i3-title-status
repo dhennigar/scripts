@@ -13,7 +13,7 @@
 #
 # See the LICENSE file for more information.
 
-use 5.032;
+use 5.040;
 use strict;
 use warnings;
 use Getopt::Long;
@@ -21,14 +21,16 @@ use AnyEvent::I3;
 
 my $usage = "Usage: $0 [--help] [--format '<format string>']
 See 'perldoc $0' for documentation.";
-my $help  = 0;
-my $format = '[%clock][%battery_charge% %battery_status] %title';
+my $format          = '[%clock][%date][%battery_charge% %battery_status] %title';
+my $help            = 0;
+my $window_warning  = 0;
+my $battery_was_low = 0;
 
 GetOptions(
-    'help' => \$help,
-    'format' => \$format
-)
-  or die "$usage";
+    'help'    => \$help,
+    'format'  => \$format,
+    'warning' => \$window_warning
+) or die "$usage";
 die "$usage" if $help;
 
 my $i3 = i3();
@@ -36,7 +38,8 @@ $i3->connect->recv or die "Error connecting to i3.";
 say "Connected to i3.";
 
 sub update_and_send_commands {
-    chomp( my $clock = qx(date "+%H:%M") );
+    chomp( my $clock          = qx(date "+%H:%M") );
+    chomp( my $date           = qx(date "+%d-%h-%Y"));
     chomp( my $battery_charge = qx(cat /sys/class/power_supply/BAT0/capacity) );
     chomp( my $battery_status = qx(cat /sys/class/power_supply/BAT0/status) );
 
@@ -48,38 +51,59 @@ sub update_and_send_commands {
 
     my $status = $format;
     $status =~ s/%clock/$clock/g;
+    $status =~ s/%date/$date/g;
     $status =~ s/%battery_charge/$battery_charge/g;
-    $status =~ s/%battery_status/$battery_status/g;    
-    $status =~ s/%battery_symbol/$battery_symbol/g;    
+    $status =~ s/%battery_status/$battery_status/g;
+    $status =~ s/%battery_symbol/$battery_symbol/g;
 
-    say "Updating title bar status info.";
-    $i3->command('[all] title_format "%title"');
-    $i3->command( "title_format $status");
+    say "Updating title status.";
+    $i3->command("[all] title_format \"%title\"; title_format $status");
+
+    # change the window border color based on battery status
+    if ($window_warning) {
+	if (int($battery_charge) <= 15 && $battery_status eq "Discharging") {
+	    if (!$battery_was_low) {
+		say "Battery low.";
+		$battery_was_low = 1;
+		$i3->command(
+		    "client.focused \"#FF0000\" \"#FF0000\" \"#FFFFFF\" \"#FF0000\" "
+		);
+	    }
+	} else {
+	    if ($battery_was_low) {
+		say "Battery no longer low.";
+		$battery_was_low = 0;
+		$i3->command(
+		    "client.focused \"#3660d0\" \"#3660d0\" \"#FFFFFF\" \"#4670e0\" "
+		);
+	    }
+	}
+    }
 }
 
 $i3->subscribe(
     {
-	window => sub {
-	    my $event = shift;
-	    if ( $event->{change} eq 'focus' ) {
-		say "Window focus event detected.";
-		update_and_send_commands();
-	    }
-	}
+        window => sub {
+            my $event = shift;
+            if ( $event->{change} eq 'focus' ) {
+                say "Window focus event detected.";
+                update_and_send_commands();
+            }
+        }
     }
 )->recv->{success} or die "Error subscribing to window events.";
 
 $i3->subscribe(
     {
-	shutdown => sub {
-            say "Shutting down i3-title-status.";
+        shutdown => sub {
+            say "Shutting down.";
             exit(0);
         },
-	_error => sub {
-	    my ($msg) = @_;
-	    say "Error: $msg";
-	    exit(1);
-	}
+        _error => sub {
+            my ($msg) = @_;
+            say "Error: $msg";
+            exit(1);
+        }
     }
 )->recv;
 
@@ -89,7 +113,7 @@ $timer = AnyEvent->timer(
     interval => 60,
     cb       => sub {
         say "60 seconds passed.";
-	update_and_send_commands();
+        update_and_send_commands();
     }
 );
 
@@ -109,7 +133,8 @@ i3-title-status - Print system information to the focused window's title bar
 
 =head1 DESCRIPTION
 
-Prints system status information into the title bar of the currently focused window. Updates on window focus events and every 60 seconds. Closes if the connection to i3 is lost.
+Prints system status information into the title bar of the currently focused window.
+Updates on window focus events and every 60 seconds. Closes if the connection to i3 is lost.
 
 =head1 OPTIONS
 
