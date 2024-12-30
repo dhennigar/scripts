@@ -19,7 +19,6 @@ use warnings;
 use Getopt::Long;
 use AnyEvent::I3 qw(:all);
 use i3::Utils    qw(find_node find_nodes);
-use Data::Dumper;
 
 # Initialize variables
 my $usage = "Usage: $0 [--reverse] [--help]
@@ -42,10 +41,9 @@ die "Could not get tree" unless $initial_tree;
 my $focused;
 my @siblings;
 
+# update currently focused window and list of sibling nodes
 sub update_data {
     my ($tree) = @_;
-
-    say Dumper($tree);
 
     $i3->get_workspaces->cb(
         sub {
@@ -74,22 +72,23 @@ sub update_data {
 
             my $has_name = sub { $_[0]->{name} && $_[0]->{name} ne '' };
             @siblings = find_nodes( $workspace, $has_name );
-            @siblings = reverse @siblings if $reverse;
-            die "Could not find sibling nodes." unless @siblings;
+	    die "Could not find sibling nodes." unless @siblings;
         }
     );
 }
 
+# focus the next sibling before/after the currently focused window
 sub cycle_focus {
 
-    say "Cycling focus.";
+    my ($reverse) = @_;
+    @siblings = reverse @siblings if $reverse;
+
     my $index = 0;
     $index++
       while $index < @siblings && $siblings[$index]{id} != $focused->{id};
     my $next_id = $siblings[ ( $index + 1 ) % @siblings ]{id};
-    say $next_id;
-    $i3->command("[con_id=$next_id] focus");
 
+    $i3->command("[con_id=$next_id] focus");
 }
 
 # initialize variables with the initial tree on startup
@@ -101,7 +100,6 @@ $i3->subscribe(
         window => sub {
             my ($event) = shift;
             if ( $event->{change} eq 'focus' ) {
-                say "Focus event detected.";
                 $i3->get_tree->cb(
                     sub {
                         my ($tree_condvar) = @_;
@@ -113,14 +111,18 @@ $i3->subscribe(
         },
         tick => sub {
             my ($event) = shift;
+	    if ( $event->{first} ) {
+		return;
+	    }
             if ( $event->{payload} eq 'cycle-focus' ) {
-                say "Tick event detected.";
-                say "$event->{payload}";
-                cycle_focus();
+                cycle_focus(0);
             }
+	    if ( $event->{payload} eq 'cycle-focus-reverse') {
+		cycle_focus(1);
+	    }
         }
     }
-)->recv->{success} or die "Error subscribing to events";
+)->recv->{success} or die "Error subscribing to events.";
 
 AE::cv->recv;
 
