@@ -1,0 +1,11 @@
+#!/bin/bash
+# /etc/tlp.d/99-custom-battery-hook
+
+case "$1" in
+    AC) 
+        i3-msg -t send_tick "battery_event:ac_connected"
+        ;;
+    BAT) 
+        i3-msg -t send_tick "battery_event:ac_disconnected"
+        ;;
+esac
