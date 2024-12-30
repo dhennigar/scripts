@@ -57,7 +57,7 @@ sub update_and_send_commands {
     $status =~ s/%battery_symbol/$battery_symbol/g;
 
     say "Updating title status.";
-    $i3->command("[all] title_format \"%title\"; title_format $status");
+    $i3->command("[workspace=__focused__] title_format \"%title\"; title_format $status");
 
     # change the window border color based on battery status
     if ($window_warning) {
@@ -89,7 +89,16 @@ $i3->subscribe(
                 say "Window focus event detected.";
                 update_and_send_commands();
             }
-        }
+        },
+	tick => sub {
+	    my ($event) = shift;
+	    if ( $event->{first} ) {
+		return;
+	    }
+	    if ( $event->{payload} =~ /battery_event:/) {
+		update_and_send_commands();
+	    }
+	}
     }
 )->recv->{success} or die "Error subscribing to window events.";
 
