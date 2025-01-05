@@ -1,0 +1,185 @@
+#!/usr/bin/env perl
+
+# i3-select-theme --- Update GTK, Emacs, Alacritty, and Fuzzel themes
+
+# Copyright © 2025 Daniel Hennigar
+
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of either:
+# 
+#   a) the Artistic License 2.0, or
+#   b) the GNU General Public License as published by the Free Software
+#      Foundation; either version 3 of the License, or (at your option) any
+#      later version.
+# 
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the LICENSE file
+# for more details.
+
+use strict;
+use warnings;
+
+#!/usr/bin/env perl
+
+# select-theme.pl --- choose a theme and update config files accordingly
+
+# Copyright (c) 2024 Daniel Hennigar
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program. If not, see <https://www.gnu.org/licenses/>.
+
+use strict;
+use warnings;
+use File::Copy;
+
+my $theme = $ARGV[0] // `echo -e "day\nnight\nmorning\nbright\nacme" | fuzzel -d -l 6 -p "Select theme > "`;
+chomp $theme;
+
+if ($theme eq "") {
+    die "No theme selected. Exiting.\n";
+}
+
+sub update_fuzzel {
+    my %colors = @_;
+    my $file = "$ENV{HOME}/.config/fuzzel/fuzzel.ini";
+    open my $fh, '<', $file or die "Cannot open $file: $!";
+    my @lines = <$fh>;
+    close $fh;
+
+    open my $out, '>', $file or die "Cannot write to $file: $!";
+    foreach my $line (@lines) {
+        foreach my $key (keys %colors) {
+            if ($line =~ /^$key=/) {
+                print $out "$key=$colors{$key}\n";
+                next;
+            }
+        }
+        print $out $line;
+    }
+    close $out;
+}
+
+if ($theme eq "day") {
+    copy("$ENV{HOME}/.config/alacritty/themes/tomorrow-day.toml", "$ENV{HOME}/.config/alacritty/colors.toml") or die "Copy failed: $!";
+    system("gsettings set org.gnome.desktop.interface gtk-theme Mint-Yz-Base-Grey");
+    system("gsettings set org.gnome.desktop.interface color-scheme prefer-light");
+    system("emacsclient -e \"(load-theme-disable-others 'drh-tomorrow-day)\"");
+    update_fuzzel(
+        background => "ffffffff",
+        text => "4d4d4cff",
+        prompt => "4d4d4cff",
+        placeholder => "8e908cff",
+        input => "4d4d4cff",
+        match => "4271aeff",
+        selection => "d6d6d6ff",
+        selection_text => "4d4d4cff",
+        selection_match => "c82829ff",
+        counter => "8e908cff"
+    );
+}
+elsif ($theme eq "night") {
+    copy("$ENV{HOME}/.config/alacritty/themes/tomorrow-night.toml", "$ENV{HOME}/.config/alacritty/colors.toml") or die "Copy failed: $!";
+    system("gsettings set org.gnome.desktop.interface gtk-theme Mint-Yz-Dark-Grey");
+    system("gsettings set org.gnome.desktop.interface color-scheme prefer-dark");
+    system("emacsclient -e \"(load-theme-disable-others 'drh-tomorrow-night)\"");
+    update_fuzzel(
+        background => "1d1f21ff",
+        text => "c5c8c6ff",
+        prompt => "c5c8c6ff",
+        placeholder => "969896ff",
+        input => "c5c8c6ff",
+        match => "81a2beff",
+        selection => "373b41ff",
+        selection_text => "c5c8c6ff",
+        selection_match => "cc6666ff",
+        counter => "969896ff"
+    );
+}
+elsif ($theme eq "morning") {
+    copy("$ENV{HOME}/.config/alacritty/themes/tomorrow-morning.toml", "$ENV{HOME}/.config/alacritty/colors.toml") or die "Copy failed: $!";
+    system("gsettings set org.gnome.desktop.interface gtk-theme Mint-Yz-Base-Grey");
+    system("gsettings set org.gnome.desktop.interface color-scheme prefer-light");
+    system("emacsclient -e \"(load-theme-disable-others 'drh-tomorrow-morning)\"");
+    update_fuzzel(
+        background => "fff0d0ff",
+        text => "4d4d4cff",
+        prompt => "4d4d4cff",
+        placeholder => "8e908cff",
+        input => "4d4d4cff",
+        match => "4271aeff",
+        selection => "e6d6a0ff",
+        selection_text => "4d4d4cff",
+        selection_match => "c82829ff",
+        counter => "8e908cff"
+    );
+}
+elsif ($theme eq "bright") {
+    copy("$ENV{HOME}/.config/alacritty/themes/tomorrow-bright.toml", "$ENV{HOME}/.config/alacritty/colors.toml") or die "Copy failed: $!";
+    system("gsettings set org.gnome.desktop.interface gtk-theme Mint-Yz-Dark-Grey");
+    system("gsettings set org.gnome.desktop.interface color-scheme prefer-dark");
+    system("emacsclient -e \"(load-theme-disable-others 'drh-tomorrow-bright)\"");
+    update_fuzzel(
+        background => "000000ff",
+        text => "eaeaeaff",
+        prompt => "eaeaeaff",
+        placeholder => "969896ff",
+        input => "eaeaeaff",
+        match => "7aa6daff",
+        selection => "424242ff",
+        selection_text => "eaeaeaff",
+        selection_match => "d54e53ff",
+        counter => "969896ff"
+    );
+}
+elsif ($theme eq "acme") {
+    copy("$ENV{HOME}/.config/alacritty/themes/acme.toml", "$ENV{HOME}/.config/alacritty/colors.toml") or die "Copy failed: $!";
+    system("gsettings set org.gnome.desktop.interface gtk-theme Mint-Yz-Base-Grey");
+    system("gsettings set org.gnome.desktop.interface color-scheme prefer-dark");
+    system("emacsclient -e \"(load-theme-disable-others 'drh-mono-acme)\"");
+    update_fuzzel(
+        background => "fefdcfff",
+        text => "4d4d4cff",
+        prompt => "4d4d4cff",
+        placeholder => "8e908cff",
+        input => "4d4d4cff",
+        match => "4271aeff",
+        selection => "e6d6a0ff",
+        selection_text => "4d4d4cff",
+        selection_match => "c82829ff",
+        counter => "8e908cff"
+    );
+}
+else {
+    die "Unknown theme: $theme\n";
+}
+
+
+__END__
+
+=head1 NAME
+
+i3-select-theme
+  
+  =head1 DESCRIPTION
+  
+  Update GTK, Emacs, Alacritty, and Fuzzel themes
+  
+  =head1 COPYRIGHT
+  
+  Copyright © 2025 Daniel Hennigar
+  
+  This library is free software; you can redistribute it and/or
+  modify it under the same terms as Perl itself.
+  
+  =cut
