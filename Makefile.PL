@@ -8,6 +8,6 @@ WriteMakefile(
 	EXE_FILES	=> [glob("bin/*")],
 	PREREQ_PM	=> {
 		'AnyEvent::I3' => 0,
-	},
+	    },
 	clean		=> { FILES => 'i3::Utils-*' },
 );

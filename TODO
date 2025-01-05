@@ -1,1 +1,3 @@
-- Include flexible `find_node` subroutine in module file
+- consider daemonizing i3-new-workspace for better responsiveness
+- perl script for screenshotting with grim
+

@@ -23,13 +23,13 @@ my $usage = "Usage: $0 [--help] [--format '<format string>']
 See 'perldoc $0' for documentation.";
 my $format          = '[%clock][%date][%battery_charge% %battery_status] %title';
 my $help            = 0;
-my $window_warning  = 0;
+my $warning         = 0;
 my $battery_was_low = 0;
 
 GetOptions(
     'help'    => \$help,
     'format'  => \$format,
-    'warning' => \$window_warning
+    'warning' => \$warning
 ) or die "$usage";
 die "$usage" if $help;
 
@@ -60,7 +60,8 @@ sub update_and_send_commands {
     $i3->command("[workspace=__focused__] title_format \"%title\"; title_format $status");
 
     # change the window border color based on battery status
-    if ($window_warning) {
+    if ($warning) {
+	say "Window warning enabled.";
 	if (int($battery_charge) <= 15 && $battery_status eq "Discharging") {
 	    if (!$battery_was_low) {
 		say "Battery low.";
@@ -81,6 +82,7 @@ sub update_and_send_commands {
     }
 }
 
+# update status line when window focus is changed
 $i3->subscribe(
     {
         window => sub {
@@ -89,19 +91,11 @@ $i3->subscribe(
                 say "Window focus event detected.";
                 update_and_send_commands();
             }
-        },
-	tick => sub {
-	    my ($event) = shift;
-	    if ( $event->{first} ) {
-		return;
-	    }
-	    if ( $event->{payload} =~ /battery_event:/) {
-		update_and_send_commands();
-	    }
-	}
+        }
     }
 )->recv->{success} or die "Error subscribing to window events.";
 
+# kill the process if connection to i3 is lost
 $i3->subscribe(
     {
         shutdown => sub {
@@ -116,13 +110,38 @@ $i3->subscribe(
     }
 )->recv;
 
+# update the status line every 30 seconds
 my $timer;
 $timer = AnyEvent->timer(
-    after    => 60,
-    interval => 60,
+    after    => 30,
+    interval => 30,
     cb       => sub {
-        say "60 seconds passed.";
+        say "30 seconds passed.";
         update_and_send_commands();
+    }
+);
+
+# update when AC status changes
+my $ac_online_file = '/sys/class/power_supply/AC/online';
+my $last_state = undef;
+my $watcher = AnyEvent->timer(
+    after    => 0,    # Start immediately
+    interval => 1,    # Poll every second
+    cb       => sub {
+        open my $fh, '<', $ac_online_file or do {
+            warn "Cannot open $ac_online_file: $!";
+            return;
+        };
+        my $current_state = <$fh>;
+        close $fh;
+        chomp($current_state);
+
+        # Trigger updates only if the state has changed
+        if (!defined($last_state) || $current_state ne $last_state) {
+            $last_state = $current_state;
+            say "AC state changed to: $current_state";
+            update_and_send_commands();
+        }
     }
 );
 
@@ -143,7 +162,7 @@ i3-title-status - Print system information to the focused window's title bar
 =head1 DESCRIPTION
 
 Prints system status information into the title bar of the currently focused window.
-Updates on window focus events and every 60 seconds. Closes if the connection to i3 is lost.
+Updates on window focus events, every 30 seconds, and when AC is plugged/unplugged.
 
 =head1 OPTIONS
 

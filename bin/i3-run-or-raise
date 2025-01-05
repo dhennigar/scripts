@@ -44,6 +44,8 @@ unless ($focus_by_app_id) {
     }
 }
 
+__END__
+
 =pod
 
 =head1 NAME
