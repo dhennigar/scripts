@@ -1,4 +1,4 @@
-#!/usr/bin/env perl
+#!/usr/bin/perl
 
 # i3-cycle-focus --- emulate "Alt-Tab" behaviour in sway/i3
 
@@ -19,8 +19,11 @@ use warnings;
 use Getopt::Long;
 use AnyEvent::I3 qw(:all);
 use i3::Utils    qw(find_node find_nodes);
+use Fcntl qw(:flock);
 
-# Initialize variables
+open my $fh, ">", "/tmp/i3-cycle-focus.lock" or die "Cannot open lock file: $!";
+flock($fh, LOCK_EX | LOCK_NB) or die "Another instance is running.";
+
 my $usage = "Usage: $0 [--reverse] [--help]
 See 'perldoc $0' for documentation.\n";
 my $reverse = 0;
@@ -56,23 +59,34 @@ sub update_data {
                     $current_workspace_name = $ws->{name};
                 }
             }
-            die "Could not get current workspace name."
-              unless $current_workspace_name;
+	    unless ($current_workspace_name) {
+		warn "Could not get current workspace name.";
+		return;
+	    }
 	    
             my $is_current_workspace = sub {
                 $_[0]->{type} eq 'workspace'
                   && $_[0]->{name} eq $current_workspace_name;
             };
             my $workspace = find_node( $tree, $is_current_workspace );
-            die "Could not get current workspace." unless $workspace;
+            unless ($workspace) {
+		warn "Could not get current workspace.";
+		return;
+	    }
 
             my $is_focused = sub { $_[0]->{focused} };
             $focused = find_node( $workspace, $is_focused );
-            die "Could not find focused window." unless $focused;
+            unless ($focused) {
+		warn "Could not find focused window";
+		return;
+	    }
 
             my $has_name = sub { $_[0]->{name} && $_[0]->{name} ne '' };
             @siblings = find_nodes( $workspace, $has_name );
-	    die "Could not find sibling nodes." unless @siblings;
+	    unless (@siblings) {
+		warn "Could not find sibling nodes.";
+		return;
+	    }
         }
     );
 }
@@ -100,16 +114,23 @@ $i3->subscribe(
         window => sub {
             my ($event) = shift;
             if ( $event->{change} eq 'focus' ) {
-                $i3->get_tree->cb(
-                    sub {
-                        my ($tree_condvar) = @_;
-			my $tree = $tree_condvar->{_ae_sent}[0];
-                        update_data($tree);
-                    }
-                );
-            }
-        },
-        tick => sub {
+		my $timer;
+		$timer = AnyEvent->timer(
+		    after => 0.1,
+		    cb    => sub {
+			$i3->get_tree->cb(
+			    sub {
+				my ($tree_condvar) = @_;
+				my $tree = $tree_condvar->{_ae_sent}[0];
+				update_data($tree);
+			    }
+			);
+			undef $timer;
+		    }
+		);
+	    }
+	},
+	tick => sub {
             my ($event) = shift;
 	    if ( $event->{first} ) {
 		return;
@@ -120,11 +141,19 @@ $i3->subscribe(
 	    if ( $event->{payload} eq 'cycle-focus-reverse') {
 		cycle_focus(1);
 	    }
-        }
+        },
+	shutdown => sub {
+		say "Shutting down.";
+		exit(0);
+	}
     }
-)->recv->{success} or die "Error subscribing to events.";
+)->recv;
 
 AE::cv->recv;
+
+END {
+    close $fh if defined $fh;
+}
 
 __END__
 

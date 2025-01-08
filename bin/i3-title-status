@@ -18,6 +18,7 @@ use strict;
 use warnings;
 use Getopt::Long;
 use AnyEvent::I3;
+use POSIX qw(strftime);
 
 my $usage = "Usage: $0 [--help] [--format '<format string>']
 See 'perldoc $0' for documentation.";
@@ -38,10 +39,18 @@ $i3->connect->recv or die "Error connecting to i3.";
 say "Connected to i3.";
 
 sub update_and_send_commands {
-    chomp( my $clock          = qx(date "+%H:%M") );
-    chomp( my $date           = qx(date "+%d-%h-%Y"));
-    chomp( my $battery_charge = qx(cat /sys/class/power_supply/BAT0/capacity) );
-    chomp( my $battery_status = qx(cat /sys/class/power_supply/BAT0/status) );
+    my $clock = strftime("%H:%M", localtime);
+    my $date  = strftime("%d-%b-%Y", localtime);
+    my $battery_charge = do {
+	open my $fh, '<', '/sys/class/power_supply/BAT0/capacity' or die $!;
+	<$fh>;
+    };
+    chomp($battery_charge);
+    my $battery_status = do {
+	open my $fh, '<', '/sys/class/power_supply/BAT0/status' or die $!;
+	<$fh>;
+    };
+    chomp($battery_status);    
 
     my %battery_symbols = (
         "Discharging" => "-",
@@ -91,13 +100,7 @@ $i3->subscribe(
                 say "Window focus event detected.";
                 update_and_send_commands();
             }
-        }
-    }
-)->recv->{success} or die "Error subscribing to window events.";
-
-# kill the process if connection to i3 is lost
-$i3->subscribe(
-    {
+        },
         shutdown => sub {
             say "Shutting down.";
             exit(0);
@@ -106,7 +109,7 @@ $i3->subscribe(
             my ($msg) = @_;
             say "Error: $msg";
             exit(1);
-        }
+        }	
     }
 )->recv;
 
@@ -126,7 +129,7 @@ my $ac_online_file = '/sys/class/power_supply/AC/online';
 my $last_state = undef;
 my $watcher = AnyEvent->timer(
     after    => 0,    # Start immediately
-    interval => 1,    # Poll every second
+    interval => 5,    # Poll every 5 seconds
     cb       => sub {
         open my $fh, '<', $ac_online_file or do {
             warn "Cannot open $ac_online_file: $!";
@@ -145,8 +148,8 @@ my $watcher = AnyEvent->timer(
     }
 );
 
-AE::cv->recv
-
+AE::cv->recv;
+  
 __END__
 
 =pod
