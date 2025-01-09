@@ -18,13 +18,16 @@
 use 5.040;
 use strict;
 use warnings;
-use Getopt::Long;
+use Getopt::Std;
 
-my $usage = "Usage: $0 [--help]
-See 'perldoc i3-clam-shell for documentation.\n";
-my $help = 0;
-GetOptions( 'help => \$help' ) or die "$usage";
-die "$usage" if $help;
+my %opts;
+getopts('h', \%opts);
+
+if ($opts{h}) {
+	say "Usage: $0 [options]";
+	say "See perldoc $0 for documentation.";
+	exit 0;
+}
 
 my $msg = "i3-msg";
 if ( exists $ENV{"SWAYSOCK"} ) {

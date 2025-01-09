@@ -17,11 +17,22 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the LICENSE file
 # for more details.
 
+use 5.040;
 use strict;
 use warnings;
 use File::Copy;
+use Getopt::Std;
 
-my $theme = $ARGV[0] // `echo -e "day\nnight\nmorning\nbright\nacme" | fuzzel -d -l 6 -p "Select theme > "`;
+my %opts;
+getopts('h', \%opts);
+
+if ($opts{h}) {
+	say "Usage: $0 [options]";
+	say "See perldoc $0 for documentation.";
+}
+
+my $theme = $ARGV[0] //
+  `echo -e "day\nnight\nmorning\nbright\nacme" | fuzzel -d -l 6 -p "Select theme > "`;
 chomp $theme;
 
 if ($theme eq "") {
@@ -49,7 +60,8 @@ sub update_fuzzel {
 }
 
 if ($theme eq "day") {
-    copy("$ENV{HOME}/.config/alacritty/themes/tomorrow-day.toml", "$ENV{HOME}/.config/alacritty/colors.toml") or die "Copy failed: $!";
+    copy("$ENV{HOME}/.config/alacritty/themes/tomorrow-day.toml",
+		 "$ENV{HOME}/.config/alacritty/colors.toml") or die "Copy failed: $!";
     system("gsettings set org.gnome.desktop.interface gtk-theme Mint-Yz-Base-Grey");
     system("gsettings set org.gnome.desktop.interface color-scheme prefer-light");
     system("emacsclient -e \"(load-theme-disable-others 'tomorrow-day)\"");
@@ -67,7 +79,8 @@ if ($theme eq "day") {
     );
 }
 elsif ($theme eq "night") {
-    copy("$ENV{HOME}/.config/alacritty/themes/tomorrow-night.toml", "$ENV{HOME}/.config/alacritty/colors.toml") or die "Copy failed: $!";
+    copy("$ENV{HOME}/.config/alacritty/themes/tomorrow-night.toml",
+		 "$ENV{HOME}/.config/alacritty/colors.toml") or die "Copy failed: $!";
     system("gsettings set org.gnome.desktop.interface gtk-theme Mint-Yz-Dark-Grey");
     system("gsettings set org.gnome.desktop.interface color-scheme prefer-dark");
     system("emacsclient -e \"(load-theme-disable-others 'tomorrow-night)\"");
@@ -85,7 +98,8 @@ elsif ($theme eq "night") {
     );
 }
 elsif ($theme eq "morning") {
-    copy("$ENV{HOME}/.config/alacritty/themes/tomorrow-morning.toml", "$ENV{HOME}/.config/alacritty/colors.toml") or die "Copy failed: $!";
+    copy("$ENV{HOME}/.config/alacritty/themes/tomorrow-morning.toml",
+		 "$ENV{HOME}/.config/alacritty/colors.toml") or die "Copy failed: $!";
     system("gsettings set org.gnome.desktop.interface gtk-theme Mint-Yz-Base-Grey");
     system("gsettings set org.gnome.desktop.interface color-scheme prefer-light");
     system("emacsclient -e \"(load-theme-disable-others 'tomorrow-morning)\"");
@@ -103,7 +117,8 @@ elsif ($theme eq "morning") {
     );
 }
 elsif ($theme eq "bright") {
-    copy("$ENV{HOME}/.config/alacritty/themes/tomorrow-bright.toml", "$ENV{HOME}/.config/alacritty/colors.toml") or die "Copy failed: $!";
+    copy("$ENV{HOME}/.config/alacritty/themes/tomorrow-bright.toml",
+		 "$ENV{HOME}/.config/alacritty/colors.toml") or die "Copy failed: $!";
     system("gsettings set org.gnome.desktop.interface gtk-theme Mint-Yz-Dark-Grey");
     system("gsettings set org.gnome.desktop.interface color-scheme prefer-dark");
     system("emacsclient -e \"(load-theme-disable-others 'tomorrow-bright)\"");
@@ -130,9 +145,15 @@ __END__
 
 i3-select-theme
 
+=head1 SYNOPSIS
+
+i3-select-theme [day, night, morning, bright]
+
 =head1 DESCRIPTION
 
-Update GTK, Emacs, Alacritty, and Fuzzel themes
+Update GTK, Emacs, Alacritty, and Fuzzel to matching "day", "night", "morning",
+or "bright" themes. Themes may be passed as a command line argument or, if none
+is provided, selected via Fuzzel (or any other dmenu-compliant menu program).
 
 =head1 COPYRIGHT
 

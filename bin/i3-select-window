@@ -18,19 +18,20 @@
 use 5.040;
 use strict;
 use warnings;
-use Getopt::Long;
+use Getopt::Std;
 use AnyEvent::I3;
 use IPC::Open2;
 
-my $usage = "Usage: $0 [--dmenu-command <command>] [--help]
-See 'perldoc $0' for documentation.\n";
 my $dmenu_cmd = 'dmenu -i -p "Select window > "';
-my $help = 0;
-GetOptions(
-    'dmenu-command' => \$dmenu_cmd,
-    'help' => \$help
-) or die "$usage";
-die "$usage" if $help || @ARGV;
+
+my %opts;
+getopts('hd:', \%opts);
+if ($opts{h}) {
+	say "Usage: $0 [options]";
+	say "See perldoc $0 for documentation.";
+	exit 0;
+}
+$dmenu_cmd = $opts{d} if $opts{d};
 
 my $i3 = AnyEvent::I3->new;
 $i3->connect->recv or die "Failed to connect to i3";

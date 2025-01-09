@@ -16,18 +16,19 @@
 use 5.040;
 use strict;
 use warnings;
-use Getopt::Long;
+use Getopt::Std;
 use AnyEvent::I3;
 
-my $usage = "Usage: $0 [--take] [--help]
-See perldoc 'i3-new-workspace' for documentation.\n";
 my $take = 0;
-my $help = 0;
-GetOptions(
-    'take' => \$take,
-    'help' => \$help,
-) or die "$usage";
-die "$usage" if $help;
+
+my %opts;
+getopts('ht', \%opts);
+if ($opts{h}) {
+	say "Usage: $0 [options]";
+	say "See perldoc $0 for documentation.";
+	exit 0;
+}
+$take = 1 if $opts{t};
 
 my $workspaces = i3->get_workspaces->recv;
 my %workspace_numbers;

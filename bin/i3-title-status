@@ -16,23 +16,25 @@
 use 5.040;
 use strict;
 use warnings;
-use Getopt::Long;
+use Getopt::Std;
 use AnyEvent::I3;
 use POSIX qw(strftime);
 
-my $usage = "Usage: $0 [--help] [--format '<format string>']
-See 'perldoc $0' for documentation.";
 my $format          = '[%clock][%date][%battery_charge% %battery_status] %title';
-my $help            = 0;
 my $warning         = 0;
 my $battery_was_low = 0;
 
-GetOptions(
-    'help'    => \$help,
-    'format'  => \$format,
-    'warning' => \$warning
-) or die "$usage";
-die "$usage" if $help;
+my %opts;
+getopts('hf:w', \%opts);
+if ($opts{h}) {
+	say "Usage: $0 [options]";
+	say "See perldoc $0 for documentation.";
+	exit 0;
+}
+if ($opts{f}) {
+	$format = $opts{f};
+}
+$warning = 1 if $opts{w};
 
 my $i3 = i3();
 $i3->connect->recv or die "Error connecting to i3.";

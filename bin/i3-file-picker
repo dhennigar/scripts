@@ -18,24 +18,29 @@
 use 5.040;
 use strict;
 use warnings;
+use Getopt::Long;
 use File::Spec;
 use Cwd;
 use IPC::Open2;
-use Getopt::Long;
 
-my $usage = "Invalid options. Usage: $0 [--show-hidden | -s]
-See 'perldoc $0' for documentation.\n";
-my $picker_cmd  = 'dmenu -i';    # Change this to 'dmenu' if desired
+my $picker_cmd  = 'dmenu -i';
 my $show_hidden = 0;
-my $help = 0;
 
-GetOptions(
-    'dmenu-command|d' => \$picker_cmd,
-    'show-hidden|s' => \$show_hidden,
-    'help|h' => \$help,
-	)
-  or die "$usage";
-die "$usage" if $help;
+my %opts;
+getopts('hd:s', \%opts);
+if ($opts{h}) {
+	say "Usage: $0 [options]";
+	say "See perldoc $0 for documentation.";
+	exit 0;
+}
+if ($opts{d}) {
+	say "Setting dmenu command.";
+	$picker_cmd = $opts{d};
+}
+if ($opts{s}) {
+	say "Showing hidden files.";
+	$show_hidden = 1;
+}
 
 sub run_picker {
     my @options = @_;
