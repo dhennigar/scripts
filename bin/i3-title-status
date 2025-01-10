@@ -106,13 +106,19 @@ $i3->subscribe(
         shutdown => sub {
             say "Shutting down.";
             exit(0);
-        },
+        }
+    }
+)->recv->{success} or die "Could not subscribe to events.";
+
+# kill program if communication with i3 errors
+$i3->subscribe(
+	{
         _error => sub {
             my ($msg) = @_;
             say "Error: $msg";
             exit(1);
-        }	
-    }
+        }
+	}
 )->recv;
 
 # update the status line every 30 seconds
