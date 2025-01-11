@@ -17,22 +17,22 @@ use 5.040;
 use strict;
 use warnings;
 use Getopt::Std;
-use AnyEvent::I3;
-use POSIX qw(strftime);
+use AnyEvent::I3 qw(:all);
+use POSIX        qw(strftime);
 
-my $format          = '[%clock][%date][%battery_charge% %battery_status] %title';
-my $warning         = 0;
+my $format  = '[%clock][%date][%battery_charge% %battery_status] %title';
+my $warning = 0;
 my $battery_was_low = 0;
 
 my %opts;
-getopts('hf:w', \%opts);
-if ($opts{h}) {
-	say "Usage: $0 [options]";
-	say "See perldoc $0 for documentation.";
-	exit 0;
+getopts( 'hf:w', \%opts );
+if ( $opts{h} ) {
+    say "Usage: $0 [options]";
+    say "See perldoc $0 for documentation.";
+    exit 0;
 }
-if ($opts{f}) {
-	$format = $opts{f};
+if ( $opts{f} ) {
+    $format = $opts{f};
 }
 $warning = 1 if $opts{w};
 
@@ -41,18 +41,22 @@ $i3->connect->recv or die "Error connecting to i3.";
 say "Connected to i3.";
 
 sub update_and_send_commands {
-    my $clock = strftime("%H:%M", localtime);
-    my $date  = strftime("%d-%b-%Y", localtime);
+
+    # clock
+    my $clock = strftime( "%H:%M",    localtime );
+    my $date  = strftime( "%d-%b-%Y", localtime );
+
+    # battery
     my $battery_charge = do {
-	open my $fh, '<', '/sys/class/power_supply/BAT0/capacity' or die $!;
-	<$fh>;
+        open my $fh, '<', '/sys/class/power_supply/BAT0/capacity' or die $!;
+        <$fh>;
     };
     chomp($battery_charge);
     my $battery_status = do {
-	open my $fh, '<', '/sys/class/power_supply/BAT0/status' or die $!;
-	<$fh>;
+        open my $fh, '<', '/sys/class/power_supply/BAT0/status' or die $!;
+        <$fh>;
     };
-    chomp($battery_status);    
+    chomp($battery_status);
 
     my %battery_symbols = (
         "Discharging" => "-",
@@ -60,6 +64,17 @@ sub update_and_send_commands {
     );
     my $battery_symbol = $battery_symbols{$battery_status} // "";
 
+    # # binding state
+    # my $response;
+    # my $condvar = AnyEvent->condvar;
+    # $i3->message(TYPE_GET_BINDING_STATE)->cb(sub {
+    # 		my ($response_cv) = shift;
+    # 		$response = $response_cv->recv;
+    # 	});
+    # $condvar->recv;
+    # say "Binding State: $response";
+
+    # format string
     my $status = $format;
     $status =~ s/%clock/$clock/g;
     $status =~ s/%date/$date/g;
@@ -67,29 +82,33 @@ sub update_and_send_commands {
     $status =~ s/%battery_status/$battery_status/g;
     $status =~ s/%battery_symbol/$battery_symbol/g;
 
+    # send command
     say "Updating title status.";
-    $i3->command("[workspace=__focused__] title_format \"%title\"; title_format $status");
+    $i3->command(
+        "[workspace=__focused__] title_format \"%title\"; title_format $status"
+    );
 
     # change the window border color based on battery status
     if ($warning) {
-	say "Window warning enabled.";
-	if (int($battery_charge) <= 15 && $battery_status eq "Discharging") {
-	    if (!$battery_was_low) {
-		say "Battery low.";
-		$battery_was_low = 1;
-		$i3->command(
-		    "client.focused \"#FF0000\" \"#FF0000\" \"#FFFFFF\" \"#FF0000\" "
-		);
-	    }
-	} else {
-	    if ($battery_was_low) {
-		say "Battery no longer low.";
-		$battery_was_low = 0;
-		$i3->command(
-		    "client.focused \"#3660d0\" \"#3660d0\" \"#FFFFFF\" \"#4670e0\" "
-		);
-	    }
-	}
+        say "Window warning enabled.";
+        if ( int($battery_charge) <= 10 && $battery_status eq "Discharging" ) {
+            if ( !$battery_was_low ) {
+                say "Battery low.";
+                $battery_was_low = 1;
+                $i3->command(
+"client.focused \"#FF0000\" \"#FF0000\" \"#FFFFFF\" \"#FF0000\" "
+                );
+            }
+        }
+        else {
+            if ($battery_was_low) {
+                say "Battery no longer low.";
+                $battery_was_low = 0;
+                $i3->command(
+"client.focused \"#3660d0\" \"#3660d0\" \"#FFFFFF\" \"#4670e0\" "
+                );
+            }
+        }
     }
 }
 
@@ -112,13 +131,13 @@ $i3->subscribe(
 
 # kill program if communication with i3 errors
 $i3->subscribe(
-	{
+    {
         _error => sub {
             my ($msg) = @_;
             say "Error: $msg";
             exit(1);
         }
-	}
+    }
 )->recv;
 
 # update the status line every 30 seconds
@@ -134,10 +153,10 @@ $timer = AnyEvent->timer(
 
 # update when AC status changes
 my $ac_online_file = '/sys/class/power_supply/AC/online';
-my $last_state = undef;
-my $watcher = AnyEvent->timer(
-    after    => 0,    # Start immediately
-    interval => 5,    # Poll every 5 seconds
+my $last_state     = undef;
+my $watcher        = AnyEvent->timer(
+    after    => 0,      # Start immediately
+    interval => 5,      # Poll every 5 seconds
     cb       => sub {
         open my $fh, '<', $ac_online_file or do {
             warn "Cannot open $ac_online_file: $!";
@@ -148,7 +167,7 @@ my $watcher = AnyEvent->timer(
         chomp($current_state);
 
         # Trigger updates only if the state has changed
-        if (!defined($last_state) || $current_state ne $last_state) {
+        if ( !defined($last_state) || $current_state ne $last_state ) {
             $last_state = $current_state;
             say "AC state changed to: $current_state";
             update_and_send_commands();
@@ -157,7 +176,7 @@ my $watcher = AnyEvent->timer(
 );
 
 AE::cv->recv;
-  
+
 __END__
 
 =pod

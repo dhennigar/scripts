@@ -25,11 +25,11 @@ use IPC::Open2;
 my $dmenu_cmd = 'dmenu -i -p "Select window > "';
 
 my %opts;
-getopts('hd:', \%opts);
-if ($opts{h}) {
-	say "Usage: $0 [options]";
-	say "See perldoc $0 for documentation.";
-	exit 0;
+getopts( 'hd:', \%opts );
+if ( $opts{h} ) {
+    say "Usage: $0 [options]";
+    say "See perldoc $0 for documentation.";
+    exit 0;
 }
 $dmenu_cmd = $opts{d} if $opts{d};
 

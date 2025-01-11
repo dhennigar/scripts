@@ -21,12 +21,12 @@ use warnings;
 use Getopt::Std;
 
 my %opts;
-getopts('h', \%opts);
+getopts( 'h', \%opts );
 
-if ($opts{h}) {
-	say "Usage: $0 [options]";
-	say "See perldoc $0 for documentation.";
-	exit 0;
+if ( $opts{h} ) {
+    say "Usage: $0 [options]";
+    say "See perldoc $0 for documentation.";
+    exit 0;
 }
 
 my $msg = "i3-msg";

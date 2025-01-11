@@ -25,38 +25,41 @@ use File::Copy;
 use Getopt::Std;
 
 open my $self, '<', $0 or die "Cannot open script file: $!";
-flock($self, LOCK_EX | LOCK_NB) or die "Another instance of i3-select-theme is already running. Exiting.";
+flock( $self, LOCK_EX | LOCK_NB )
+  or die "Another instance of i3-select-theme is already running. Exiting.";
 
-die "No display environment available. Exiting.\n" unless $ENV{DISPLAY} || $ENV{WAYLAND_DISPLAY};
+die "No display environment available. Exiting.\n"
+  unless $ENV{DISPLAY} || $ENV{WAYLAND_DISPLAY};
 
 my %opts;
-getopts('h', \%opts);
+getopts( 'h', \%opts );
 
-if ($opts{h}) {
-	say "Usage: $0 [options]";
-	say "See perldoc $0 for documentation.";
-	exit 0;
+if ( $opts{h} ) {
+    say "Usage: $0 [options]";
+    say "See perldoc $0 for documentation.";
+    exit 0;
 }
 
-my $theme = $ARGV[0] //
-  `echo -e "day\nnight\nmorning\nbright\nacme" | fuzzel -d -l 6 -p "Select theme > "`;
+my $theme = $ARGV[0]
+  // `echo -e "day\nnight\nmorning\nbright\nacme" | fuzzel -d -l 6 -p "Select theme > "`;
 chomp $theme;
 
-if ($theme eq "") {
+if ( $theme eq "" ) {
     die "No theme selected. Exiting.\n";
 }
 
 sub update_fuzzel {
     my %colors = @_;
-    my $file = "$ENV{HOME}/.config/fuzzel/fuzzel.ini";
+    my $file   = "$ENV{HOME}/.config/fuzzel/fuzzel.ini";
 
     # Read and modify file in place
     open my $fh, '+<', $file or die "Cannot open $file for reading/writing: $!";
     my @lines;
     while (<$fh>) {
-        if (/^(\w+)=/) {                # Match lines with a key=value format
+        if (/^(\w+)=/) {    # Match lines with a key=value format
             my $key = $1;
-            s/^(\w+)=.*/$key=$colors{$key}/ if exists $colors{$key};  # Update line if key exists
+            s/^(\w+)=.*/$key=$colors{$key}/
+              if exists $colors{$key};    # Update line if key exists
         }
         push @lines, $_;
     }
@@ -71,80 +74,99 @@ sub run_command {
     system($cmd) == 0 or die "Failed to execute: $cmd\nExit code: $?";
 }
 
-if ($theme eq "day") {
-    copy("$ENV{HOME}/.config/alacritty/themes/tomorrow-day.toml",
-		 "$ENV{HOME}/.config/alacritty/colors.toml") or die "Copy failed: $!";
-    run_command("gsettings set org.gnome.desktop.interface gtk-theme Mint-Yz-Base-Grey");
-    run_command("gsettings set org.gnome.desktop.interface color-scheme prefer-light");
+if ( $theme eq "day" ) {
+    copy( "$ENV{HOME}/.config/alacritty/themes/tomorrow-day.toml",
+        "$ENV{HOME}/.config/alacritty/colors.toml" )
+      or die "Copy failed: $!";
+    run_command(
+        "gsettings set org.gnome.desktop.interface gtk-theme Mint-Yz-Base-Grey"
+    );
+    run_command(
+        "gsettings set org.gnome.desktop.interface color-scheme prefer-light");
     run_command("emacsclient -e \"(load-theme-disable-others 'tomorrow-day)\"");
     update_fuzzel(
-        background => "ffffffff",
-        text => "4d4d4cff",
-        prompt => "4d4d4cff",
-        placeholder => "8e908cff",
-        input => "4d4d4cff",
-        match => "4271aeff",
-        selection => "d6d6d6ff",
-        selection_text => "4d4d4cff",
+        background      => "ffffffff",
+        text            => "4d4d4cff",
+        prompt          => "4d4d4cff",
+        placeholder     => "8e908cff",
+        input           => "4d4d4cff",
+        match           => "4271aeff",
+        selection       => "d6d6d6ff",
+        selection_text  => "4d4d4cff",
         selection_match => "c82829ff",
-        counter => "8e908cff"
+        counter         => "8e908cff"
     );
 }
-elsif ($theme eq "night") {
-    copy("$ENV{HOME}/.config/alacritty/themes/tomorrow-night.toml",
-		 "$ENV{HOME}/.config/alacritty/colors.toml") or die "Copy failed: $!";
-    run_command("gsettings set org.gnome.desktop.interface gtk-theme Mint-Yz-Dark-Grey");
-    run_command("gsettings set org.gnome.desktop.interface color-scheme prefer-dark");
-    run_command("emacsclient -e \"(load-theme-disable-others 'tomorrow-night)\"");
+elsif ( $theme eq "night" ) {
+    copy( "$ENV{HOME}/.config/alacritty/themes/tomorrow-night.toml",
+        "$ENV{HOME}/.config/alacritty/colors.toml" )
+      or die "Copy failed: $!";
+    run_command(
+        "gsettings set org.gnome.desktop.interface gtk-theme Mint-Yz-Dark-Grey"
+    );
+    run_command(
+        "gsettings set org.gnome.desktop.interface color-scheme prefer-dark");
+    run_command(
+        "emacsclient -e \"(load-theme-disable-others 'tomorrow-night)\"");
     update_fuzzel(
-        background => "1d1f21ff",
-        text => "c5c8c6ff",
-        prompt => "c5c8c6ff",
-        placeholder => "969896ff",
-        input => "c5c8c6ff",
-        match => "81a2beff",
-        selection => "373b41ff",
-        selection_text => "c5c8c6ff",
+        background      => "1d1f21ff",
+        text            => "c5c8c6ff",
+        prompt          => "c5c8c6ff",
+        placeholder     => "969896ff",
+        input           => "c5c8c6ff",
+        match           => "81a2beff",
+        selection       => "373b41ff",
+        selection_text  => "c5c8c6ff",
         selection_match => "cc6666ff",
-        counter => "969896ff"
+        counter         => "969896ff"
     );
 }
-elsif ($theme eq "morning") {
-    copy("$ENV{HOME}/.config/alacritty/themes/tomorrow-morning.toml",
-		 "$ENV{HOME}/.config/alacritty/colors.toml") or die "Copy failed: $!";
-    run_command("gsettings set org.gnome.desktop.interface gtk-theme Mint-Yz-Base-Grey");
-    run_command("gsettings set org.gnome.desktop.interface color-scheme prefer-light");
-    run_command("emacsclient -e \"(load-theme-disable-others 'tomorrow-morning)\"");
+elsif ( $theme eq "morning" ) {
+    copy( "$ENV{HOME}/.config/alacritty/themes/tomorrow-morning.toml",
+        "$ENV{HOME}/.config/alacritty/colors.toml" )
+      or die "Copy failed: $!";
+    run_command(
+        "gsettings set org.gnome.desktop.interface gtk-theme Mint-Yz-Base-Grey"
+    );
+    run_command(
+        "gsettings set org.gnome.desktop.interface color-scheme prefer-light");
+    run_command(
+        "emacsclient -e \"(load-theme-disable-others 'tomorrow-morning)\"");
     update_fuzzel(
-        background => "fff0d0ff",
-        text => "4d4d4cff",
-        prompt => "4d4d4cff",
-        placeholder => "8e908cff",
-        input => "4d4d4cff",
-        match => "4271aeff",
-        selection => "e6d6a0ff",
-        selection_text => "4d4d4cff",
+        background      => "fff0d0ff",
+        text            => "4d4d4cff",
+        prompt          => "4d4d4cff",
+        placeholder     => "8e908cff",
+        input           => "4d4d4cff",
+        match           => "4271aeff",
+        selection       => "e6d6a0ff",
+        selection_text  => "4d4d4cff",
         selection_match => "c82829ff",
-        counter => "8e908cff"
+        counter         => "8e908cff"
     );
 }
-elsif ($theme eq "bright") {
-    copy("$ENV{HOME}/.config/alacritty/themes/tomorrow-bright.toml",
-		 "$ENV{HOME}/.config/alacritty/colors.toml") or die "Copy failed: $!";
-    run_command("gsettings set org.gnome.desktop.interface gtk-theme Mint-Yz-Dark-Grey");
-    run_command("gsettings set org.gnome.desktop.interface color-scheme prefer-dark");
-    run_command("emacsclient -e \"(load-theme-disable-others 'tomorrow-bright)\"");
+elsif ( $theme eq "bright" ) {
+    copy( "$ENV{HOME}/.config/alacritty/themes/tomorrow-bright.toml",
+        "$ENV{HOME}/.config/alacritty/colors.toml" )
+      or die "Copy failed: $!";
+    run_command(
+        "gsettings set org.gnome.desktop.interface gtk-theme Mint-Yz-Dark-Grey"
+    );
+    run_command(
+        "gsettings set org.gnome.desktop.interface color-scheme prefer-dark");
+    run_command(
+        "emacsclient -e \"(load-theme-disable-others 'tomorrow-bright)\"");
     update_fuzzel(
-        background => "000000ff",
-        text => "eaeaeaff",
-        prompt => "eaeaeaff",
-        placeholder => "969896ff",
-        input => "eaeaeaff",
-        match => "7aa6daff",
-        selection => "424242ff",
-        selection_text => "eaeaeaff",
+        background      => "000000ff",
+        text            => "eaeaeaff",
+        prompt          => "eaeaeaff",
+        placeholder     => "969896ff",
+        input           => "eaeaeaff",
+        match           => "7aa6daff",
+        selection       => "424242ff",
+        selection_text  => "eaeaeaff",
         selection_match => "d54e53ff",
-        counter => "969896ff"
+        counter         => "969896ff"
     );
 }
 else {

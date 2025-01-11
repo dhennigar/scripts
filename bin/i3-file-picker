@@ -27,19 +27,19 @@ my $picker_cmd  = 'dmenu -i';
 my $show_hidden = 0;
 
 my %opts;
-getopts('hd:s', \%opts);
-if ($opts{h}) {
-	say "Usage: $0 [options]";
-	say "See perldoc $0 for documentation.";
-	exit 0;
+getopts( 'hd:s', \%opts );
+if ( $opts{h} ) {
+    say "Usage: $0 [options]";
+    say "See perldoc $0 for documentation.";
+    exit 0;
 }
-if ($opts{d}) {
-	say "Setting dmenu command.";
-	$picker_cmd = $opts{d};
+if ( $opts{d} ) {
+    say "Setting dmenu command.";
+    $picker_cmd = $opts{d};
 }
-if ($opts{s}) {
-	say "Showing hidden files.";
-	$show_hidden = 1;
+if ( $opts{s} ) {
+    say "Showing hidden files.";
+    $show_hidden = 1;
 }
 
 sub run_picker {
