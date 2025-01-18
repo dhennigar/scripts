@@ -14,102 +14,102 @@
 # See the LICENSE file for more information.
 
 use 5.040;
-use strict;
-use warnings;
+use Carp;
+use Readonly;
 use Getopt::Std;
+
+# use Pod::Usage;
+use English      qw(-no_match_vars);
 use AnyEvent::I3 qw(:all);
 use POSIX        qw(strftime);
+use i3::Utils;
 
-my $format  = '[%clock][%date][%battery_charge% %battery_status] %title';
-my $warning = 0;
-my $battery_was_low = 0;
-
-my %opts;
-getopts( 'hf:w', \%opts );
-if ( $opts{h} ) {
-    say "Usage: $0 [options]";
-    say "See perldoc $0 for documentation.";
-    exit 0;
+sub VERSION {
+    return $i3::Utils::VERSION;
 }
+
+Readonly my $THRESHOLD => 10;
+my $warning         = 0;
+my $battery_was_low = 0;
+my $format = '[%clock][%date][%battery_charge% %battery_status] %title';
+
+$Getopt::Std::STANDARD_HELP_VERSION = 1;
+my %opts;
+getopts( 'f:wt:', \%opts );
 if ( $opts{f} ) {
     $format = $opts{f};
 }
-$warning = 1 if $opts{w};
+$warning = $opts{w};
+my $threshold = $opts{t} // $THRESHOLD;
 
 my $i3 = i3();
-$i3->connect->recv or die "Error connecting to i3.";
-say "Connected to i3.";
+$i3->connect->recv or croak 'Error connecting to i3.';
 
 sub update_and_send_commands {
 
     # clock
-    my $clock = strftime( "%H:%M",    localtime );
-    my $date  = strftime( "%d-%b-%Y", localtime );
+    my $clock = strftime( '%H:%M',    localtime );
+    my $date  = strftime( '%d-%b-%Y', localtime );
 
-    # battery
-    my $battery_charge = do {
-        open my $fh, '<', '/sys/class/power_supply/BAT0/capacity' or die $!;
-        <$fh>;
-    };
-    chomp($battery_charge);
-    my $battery_status = do {
-        open my $fh, '<', '/sys/class/power_supply/BAT0/status' or die $!;
-        <$fh>;
-    };
-    chomp($battery_status);
+    # battery charge
+    my $battery_charge;
+    {
+        open my $fh, '<', '/sys/class/power_supply/BAT0/capacity'
+          or croak "$OS_ERROR";
+        $battery_charge = <$fh>;
+        close $fh or carp "Failed to close file handle: $OS_ERROR";
+    }
+    chomp $battery_charge;
+
+    # battery status
+    my $battery_status;
+    {
+        open my $fh, '<', '/sys/class/power_supply/BAT0/status'
+          or croak "$OS_ERROR";
+        $battery_status = <$fh>;
+        close $fh or carp "Failed to close file handle: $OS_ERROR";
+    }
+    chomp $battery_status;
 
     my %battery_symbols = (
-        "Discharging" => "-",
-        "Charging"    => "+"
+        'Discharging' => q(-),
+        'Charging'    => q(+)
     );
-    my $battery_symbol = $battery_symbols{$battery_status} // "";
-
-    # # binding state
-    # my $response;
-    # my $condvar = AnyEvent->condvar;
-    # $i3->message(TYPE_GET_BINDING_STATE)->cb(sub {
-    # 		my ($response_cv) = shift;
-    # 		$response = $response_cv->recv;
-    # 	});
-    # $condvar->recv;
-    # say "Binding State: $response";
+    my $battery_symbol = $battery_symbols{$battery_status} // undef;
 
     # format string
     my $status = $format;
-    $status =~ s/%clock/$clock/g;
-    $status =~ s/%date/$date/g;
-    $status =~ s/%battery_charge/$battery_charge/g;
-    $status =~ s/%battery_status/$battery_status/g;
-    $status =~ s/%battery_symbol/$battery_symbol/g;
+    $status =~ s/%clock/$clock/gxms;
+    $status =~ s/%date/$date/gxms;
+    $status =~ s/%battery_charge/$battery_charge/gxms;
+    $status =~ s/%battery_status/$battery_status/gxms;
+    $status =~ s/%battery_symbol/$battery_symbol/gxms;
 
     # send command
-    say "Updating title status.";
     $i3->command(
         "[workspace=__focused__] title_format \"%title\"; title_format $status"
     );
 
     # change the window border color based on battery status
     if ($warning) {
-        say "Window warning enabled.";
-        if ( int($battery_charge) <= 10 && $battery_status eq "Discharging" ) {
+        if ( int($battery_charge) <= $threshold
+            && $battery_status eq 'Discharging' )
+        {
             if ( !$battery_was_low ) {
-                say "Battery low.";
                 $battery_was_low = 1;
                 $i3->command(
-"client.focused \"#FF0000\" \"#FF0000\" \"#FFFFFF\" \"#FF0000\" "
-                );
+                    'client.focused "#FF0000" "#FF0000" "#FFFFFF" "#FF0000"');
             }
         }
         else {
             if ($battery_was_low) {
-                say "Battery no longer low.";
                 $battery_was_low = 0;
                 $i3->command(
-"client.focused \"#3660d0\" \"#3660d0\" \"#FFFFFF\" \"#4670e0\" "
-                );
+                    'client.focused "#3660d0" "#3660d0" "#FFFFFF" "#4670e0"');
             }
         }
     }
+    return 0;
 }
 
 # update status line when window focus is changed
@@ -118,24 +118,21 @@ $i3->subscribe(
         window => sub {
             my $event = shift;
             if ( $event->{change} eq 'focus' ) {
-                say "Window focus event detected.";
                 update_and_send_commands();
             }
         },
         shutdown => sub {
-            say "Shutting down.";
-            exit(0);
+            exit 0;
         }
     }
-)->recv->{success} or die "Could not subscribe to events.";
+)->recv->{success} or croak 'Could not subscribe to events.';
 
 # kill program if communication with i3 errors
 $i3->subscribe(
     {
         _error => sub {
             my ($msg) = @_;
-            say "Error: $msg";
-            exit(1);
+            croak "Error: $msg";
         }
     }
 )->recv;
@@ -146,7 +143,6 @@ $timer = AnyEvent->timer(
     after    => 30,
     interval => 30,
     cb       => sub {
-        say "30 seconds passed.";
         update_and_send_commands();
     }
 );
@@ -159,17 +155,16 @@ my $watcher        = AnyEvent->timer(
     interval => 5,      # Poll every 5 seconds
     cb       => sub {
         open my $fh, '<', $ac_online_file or do {
-            warn "Cannot open $ac_online_file: $!";
+            carp "Cannot open $ac_online_file: $OS_ERROR";
             return;
         };
         my $current_state = <$fh>;
-        close $fh;
-        chomp($current_state);
+        close $fh or croak "$OS_ERROR";
+        chomp $current_state;
 
         # Trigger updates only if the state has changed
         if ( !defined($last_state) || $current_state ne $last_state ) {
             $last_state = $current_state;
-            say "AC state changed to: $current_state";
             update_and_send_commands();
         }
     }
@@ -183,11 +178,11 @@ __END__
 
 =head1 NAME
 
-i3-title-status - Print system information to the focused window's title bar
+i3-title-status - version C<$VERSION>
 
-=head1 SYNOPSIS
+=head1 USAGE
 
-  i3-title-status [--format '<format string>'] [--help]
+    i3-title-status [OPTIONS]
 
 =head1 DESCRIPTION
 
@@ -224,8 +219,20 @@ Specify a custom format for the status information. Valid substitutions are:
 
 Daniel Hennigar
 
-=head1 LICENSE
+=head1 LICENSE AND COPYRIGHT
+
+Copyright (C) 2025 Daniel Hennigar
 
 Licensed under the Artistic License 2.0 and GNU GPL.
+
+This program is free software; you can redistribute it and/or modify
+it under the terms of either:
+
+a) the Artistic License 2.0, or
+
+b) the GNU General Public License as published by the Free Software
+Foundation; either version 3, or (at your option) any later version.
+
+See the LICENSE file for more information.
 
 =cut

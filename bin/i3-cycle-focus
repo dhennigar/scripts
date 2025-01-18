@@ -14,30 +14,28 @@
 # See the LICENSE file for more information.
 
 use 5.040;
-use strict;
-use warnings;
+use Carp;
 use Getopt::Std;
-use Fcntl        qw(:flock);
+use Pod::Usage;
 use AnyEvent::I3 qw(:all);
 use i3::Utils    qw(find_node find_nodes);
 
+sub VERSION {
+    return $i3::Utils::VERSION;
+}
+
 my %opts;
-getopts( 'h', \%opts );
+getopts( 'h', \%opts ) or pd2usage(2);
 if ( $opts{h} ) {
-    say "Usage: $0 [options]";
-    say "See perldoc $0 for documentation.";
+    pod2usage(1);
     exit 0;
 }
 
-# ensure only one instance is running
-open my $fh, ">", "/tmp/i3-cycle-focus.lock" or die "Cannot open lock file: $!";
-flock( $fh, LOCK_EX | LOCK_NB ) or die "Another instance is running.";
-
 my $i3 = i3();
-$i3->connect->recv or die "Failed to connect to i3.";
+$i3->connect->recv or croak 'Failed to connect to i3.';
 
-my $initial_tree = $i3->get_tree->recv;
-die "Could not get tree" unless $initial_tree;
+my $initial_tree = $i3->get_tree->recv
+  or croak 'Could not get initial tree';
 
 my $focused;
 my @siblings;
@@ -47,18 +45,17 @@ sub update_data {
 
     $i3->get_workspaces->cb(
         sub {
-            my ($workspaces_condvar) = @_;
-            my $workspaces_array_ref = $workspaces_condvar->{_ae_sent}[0];
+            my @workspaces = @{ $_[0]->{_ae_sent}[0] };
 
             my $current_workspace_name;
-            foreach my $ws (@$workspaces_array_ref) {
+            foreach my $ws (@workspaces) {
                 if ( $ws->{focused} ) {
                     $current_workspace_name = $ws->{name};
                 }
             }
-            unless ($current_workspace_name) {
-                warn "Could not get current workspace name.";
-                return;
+            if ( not $current_workspace_name ) {
+                carp 'Could not get current workspace name.';
+                return 0;
             }
 
             my $is_current_workspace = sub {
@@ -66,40 +63,47 @@ sub update_data {
                   && $_[0]->{name} eq $current_workspace_name;
             };
             my $workspace = find_node( $tree, $is_current_workspace );
-            unless ($workspace) {
-                warn "Could not get current workspace.";
-                return;
+            if ( not $workspace ) {
+                carp 'Could not get current workspace.';
+                return 0;
             }
 
             my $is_focused = sub { $_[0]->{focused} };
             $focused = find_node( $workspace, $is_focused );
-            unless ($focused) {
-                warn "Could not find focused window";
-                return;
+            if ( not $focused ) {
+                carp 'Could not find focused window';
+                return 0;
             }
 
-            my $has_name = sub { $_[0]->{name} && $_[0]->{name} ne '' };
+            my $has_name =
+              sub { defined $_[0]->{name} && length $_[0]->{name} };
             @siblings = find_nodes( $workspace, $has_name );
-            unless (@siblings) {
-                warn "Could not find sibling nodes.";
-                return;
+            if ( not @siblings ) {
+                carp 'Could not find sibling nodes.';
+                return 0;
             }
         }
     );
+    return 1;
 }
 
 # focus the next sibling before/after the currently focused window
 sub cycle_focus {
 
     my ($reverse) = @_;
-    @siblings = reverse @siblings if $reverse;
+    if ($reverse) { @siblings = reverse @siblings }
 
     my $index = 0;
-    $index++
-      while $index < @siblings && $siblings[$index]{id} != $focused->{id};
-    my $next_id = $siblings[ ( $index + 1 ) % @siblings ]{id};
+    while ( $index < @siblings && $siblings[$index]{id} != $focused->{id} ) {
+        $index++;
+    }
+    my $next_id = $siblings[ ( $index + 1 ) % @siblings ]{id}
+      or croak 'Could not find next ID';
 
-    $i3->command("[con_id=$next_id] focus");
+    $i3->command("[con_id=$next_id] focus")
+      or croak 'Could not send i3 command.';
+
+    return (1);
 }
 
 # initialize variables with the initial tree on startup
@@ -140,26 +144,20 @@ $i3->subscribe(
             }
         },
         shutdown => sub {
-            say "Shutting down.";
-            exit(0);
+            exit 0;
         }
     }
-)->recv->{success} or die "Could not subscribe to i3 events.";
+)->recv->{success} or croak 'Could not subscribe to i3 events.';
 
 $i3->subscribe(
     {
         _error => sub {
-            say "Lost connection.";
-            exit(1);
+            croak 'Error in i3 connection';
         }
     }
 )->recv;
 
 AE::cv->recv;
-
-END {
-    close $fh if defined $fh;
-}
 
 __END__
 
@@ -169,11 +167,11 @@ __END__
 
 i3-cycle-focus - Cycle through the windows on the current i3/sway workspace
 
-=head1 SYNOPSIS
+=head1 USAGE
 
 =over 4
 
-i3-cycle-focus [--reverse] [--help]
+i3-cycle-focus [OPTIONS]
 
 =back
 
@@ -195,7 +193,7 @@ Emulate 'alt-tab' behavior for i3/sway, cycling the focus among the windows on t
 
 Daniel Hennigar
 
-=head1 LICENSE
+=head1 LICENSE AND COPYRIGHT
 
 Licensed under the Artistic License 2.0 and GNU GPL.
 

@@ -16,80 +16,84 @@
 # See the LICENSE file for more information.
 
 use 5.040;
-use strict;
-use warnings;
-use Getopt::Long;
+use Carp;
+use Getopt::Std;
+use Pod::Usage;
+use English qw(-no_match_vars);
 use File::Spec;
 use Cwd;
 use IPC::Open2;
+
+sub VERSION {
+    return $i3::Utils::VERSION;
+}
 
 my $picker_cmd  = 'dmenu -i';
 my $show_hidden = 0;
 
 my %opts;
-getopts( 'hd:s', \%opts );
+getopts( 'hd:s', \%opts ) or pod2usage(2);
 if ( $opts{h} ) {
-    say "Usage: $0 [options]";
-    say "See perldoc $0 for documentation.";
+    pod2usage();
     exit 0;
 }
 if ( $opts{d} ) {
-    say "Setting dmenu command.";
     $picker_cmd = $opts{d};
 }
 if ( $opts{s} ) {
-    say "Showing hidden files.";
     $show_hidden = 1;
 }
 
 sub run_picker {
     my @options = @_;
-    return unless @options;
+    if ( not @options ) { carp 'No options'; return 0 }
 
     my ( $picker_out, $picker_in );
     my $pid = open2( $picker_out, $picker_in, $picker_cmd )
-      or die "Failed to open picker: $!";
+      or croak "Failed to open picker: $OS_ERROR";
 
-    print $picker_in join( "\n", @options );
-    close($picker_in);
+    print {$picker_in} join "\n", @options
+      or croak 'Could not send to picker';
+    close $picker_in or croak 'Could not close file handle';
 
     my $selection = <$picker_out>;
-    close($picker_out);
-    waitpid( $pid, 0 );
+    close $picker_out or croak 'Could not close file handle';
+    waitpid $pid, 0;
 
-    chomp($selection) if $selection;
+    if ($selection) { chomp $selection }
     return $selection;
 }
 
-my $current_dir = $ENV{HOME} or die "HOME environment variable not set.";
+my $current_dir = $ENV{HOME}
+  or croak 'HOME environment variable not set.';
 
 while (1) {
 
-    opendir( my $dh, $current_dir )
-      or die "Failed to open directory '$current_dir': $!";
-    my @entries = sort readdir($dh);
-    closedir($dh);
+    opendir my $dh, $current_dir
+      or croak "Failed to open directory '$current_dir': $OS_ERROR";
+    my @entries = sort readdir $dh;
+    closedir $dh;
 
-    @entries = grep { $_ =~ /^\.\.?$|^[^\.]/ || $show_hidden } @entries;
+    @entries = grep { /^[.]{1,2}$|^[^.]/xms || $show_hidden } @entries;
 
     @entries =
       map { -d File::Spec->catfile( $current_dir, $_ ) ? "$_/" : $_ } @entries;
 
     my $choice = run_picker(@entries);
-    last unless defined $choice;
+    last if ( not defined $choice );
 
-    my $is_directory = ( $choice =~ s{/$}{} );
+    my $is_directory = ( $choice =~ s{/$}{}xms );
 
     if ($is_directory) {
 
         $current_dir = File::Spec->catfile( $current_dir, $choice );
         $current_dir = Cwd::abs_path($current_dir)
-          or die "Failed to resolve path: $!";
+          or croak "Failed to resolve path: $OS_ERROR";
     }
     else {
         my $file_path = File::Spec->catfile( $current_dir, $choice );
         system( 'xdg-open', $file_path ) == 0
-          or warn "Failed to open file '$file_path': $!";
+          or carp "Failed to open file '$file_path': $OS_ERROR";
         last;
     }
 }
@@ -102,9 +106,9 @@ __END__
 
 i3-file-picker - use dmenu (or equivalent) as a simple file explorer
 
-=head1 SYNOPSIS
+=head1 USAGE
 
-  i3-new-workspace [--show-hidden] [dmenu-command '<command>'][--help]
+  i3-new-workspace [OPTIONS]
 
 =head1 DESCRIPTION
 
@@ -126,7 +130,9 @@ Use dmenu, or a compatible menu program like rofi, as a simple file picker start
 
 Daniel Hennigar
 
-=head1 LICENSE
+=head1 LICENSE AND COPYRIGHT
+
+Copyright (C) 2025 Daniel Hennigar
 
 Licensed under the Artistic License 2.0 and GNU GPL.
 

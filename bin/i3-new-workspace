@@ -16,6 +16,7 @@
 use 5.040;
 use strict;
 use warnings;
+use Carp;
 use Getopt::Std;
 use AnyEvent::I3;
 
@@ -30,7 +31,8 @@ if ( $opts{h} ) {
 }
 $take = 1 if $opts{t};
 
-my $workspaces = i3->get_workspaces->recv;
+my $workspaces = i3->get_workspaces->recv
+  or carp 'Could not get workspaces';
 my %workspace_numbers;
 foreach my $workspace (@$workspaces) {
     $workspace_numbers{ $workspace->{num} } = 1;
@@ -45,17 +47,13 @@ for my $i ( 1 .. $max_workspace_number ) {
     }
 }
 
-if ( defined $lowest_empty_workspace ) {
-    if ($take) {
-        i3->command( "move to workspace "
-              . $lowest_empty_workspace
-              . "; workspace "
-              . $lowest_empty_workspace );
-    }
-    else {
-        i3->command( "workspace " . $lowest_empty_workspace );
-    }
-}
+carp 'Could not find lowest workspace.'
+  unless $lowest_empty_workspace;
+
+my $cmd = ($take ? "move to workspace $lowest_empty_workspace; " : "")
+  . "workspace $lowest_empty_workspace";
+
+i3->command( "$cmd" );
 
 __END__
 

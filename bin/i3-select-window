@@ -18,6 +18,7 @@
 use 5.040;
 use strict;
 use warnings;
+use Carp;
 use Getopt::Std;
 use AnyEvent::I3;
 use IPC::Open2;
@@ -34,7 +35,7 @@ if ( $opts{h} ) {
 $dmenu_cmd = $opts{d} if $opts{d};
 
 my $i3 = AnyEvent::I3->new;
-$i3->connect->recv or die "Failed to connect to i3";
+$i3->connect->recv or carp "Failed to connect to i3";
 
 my $tree_data = $i3->get_tree->recv;
 
@@ -87,7 +88,7 @@ my $selected;
 {
     my ( $dmenu_out, $dmenu_in );
     my $pid = open2( $dmenu_out, $dmenu_in, $dmenu_cmd )
-      or die "Failed to open dmenu: $!";
+      or carp "Failed to open dmenu: $!";
 
     binmode( $dmenu_in,  ":encoding(UTF-8)" );
     binmode( $dmenu_out, ":encoding(UTF-8)" );
@@ -107,7 +108,7 @@ if ( my $window_id = $window_map{$selected} ) {
     $i3->command("[con_id=$window_id] focus")->recv;
 }
 else {
-    warn "No matching window found for selection: $selected";
+    carp "No matching window found for selection: $selected";
 }
 
 __END__

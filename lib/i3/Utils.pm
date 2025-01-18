@@ -22,25 +22,29 @@ use Exporter 'import';
 
 our @EXPORT_OK = qw(find_node find_nodes);
 
+our $VERSION = '0.01';
+
 sub _find {
     my ( $node, $criteria ) = @_;
-    
-    if ($criteria->($node)) {
-	return $node;
+
+    if ( $criteria->($node) ) {
+        return $node;
     }
-    
+
     for my $child ( @{ $node->{nodes} || [] } ) {
-	my $target_node =_find( $child, $criteria );
-	return $target_node if $target_node;
+        my $target_node = _find( $child, $criteria );
+        return $target_node if $target_node;
     }
 }
 
 sub _finds {
     my ( $node, $criteria, $is_root, $children ) = @_;
 
-    push @$children, $node if !$is_root && $criteria->( $node );
-    
-    foreach my $child ( @{ $node->{nodes} || [] }, @{ $node->{floating_nodes} || [] } ) {
+    push @$children, $node if !$is_root && $criteria->($node);
+
+    foreach my $child ( @{ $node->{nodes} || [] },
+        @{ $node->{floating_nodes} || [] } )
+    {
         _finds( $child, $criteria, 0, $children );
     }
     return $children;
@@ -50,16 +54,18 @@ sub find_node {
     my ( $node, $criteria ) = @_;
 
     die "First argument must be a node hashref" unless ref $node eq 'HASH';
-    die "Second argument must be a code reference" unless ref $criteria eq 'CODE';
+    die "Second argument must be a code reference"
+      unless ref $criteria eq 'CODE';
 
-    return _find( $node, $criteria, undef, undef);
+    return _find( $node, $criteria, undef, undef );
 }
 
 sub find_nodes {
     my ( $node, $criteria ) = @_;
 
     die "First argument must be a node hashref" unless ref $node eq 'HASH';
-    die "Second argument must be a code reference" unless ref $criteria eq 'CODE';
+    die "Second argument must be a code reference"
+      unless ref $criteria eq 'CODE';
 
     return @{ _finds( $node, $criteria, 1, [] ) };
 }

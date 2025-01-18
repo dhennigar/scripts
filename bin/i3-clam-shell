@@ -18,6 +18,7 @@
 use 5.040;
 use strict;
 use warnings;
+use Carp;
 use Getopt::Std;
 
 my %opts;
@@ -34,9 +35,10 @@ if ( exists $ENV{"SWAYSOCK"} ) {
     $msg = "swaymsg";
 }
 
-open my $lid_state_file, '<', '/proc/acpi/button/lid/LID/state';
-my $lid_state = <$lid_state_file>;
-close $lid_state_file;
+my $lid_state_path = '/proc/acpi/button/lid/LID/state';
+open my $lid_state_fh, '<', $lid_state_path or croak 'Could not open lid state file';
+my $lid_state = <$lid_state_fh>;
+close $lid_state_fh;
 
 if ( $lid_state =~ m/open/ ) {
     system("$msg output eDP-1 enable");

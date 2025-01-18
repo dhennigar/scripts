@@ -14,34 +14,38 @@
 # See the LICENSE file for more information.
 
 use 5.040;
-use strict;
-use warnings;
+use Carp;
 use Getopt::Std;
+use i3::Utils;
+
+sub VERSION {
+    return $i3::Utils::VERSION;
+}
 
 my %opts;
-getopts( 'h', \%opts );
+getopts( 'h', \%opts ) or pod2usage(2);
 if ( $opts{h} ) {
-    say "Usage: $0 [options] <app_id> <exec_cmd>";
-    say "See perldoc $0 for documentation.";
+    pod2usage(1);
     exit 0;
 }
 
 if ( @ARGV < 2 ) {
-    die "Usage: $0 <app_id or class> <command>\n";
+    pod2usage(2);
+    exit;
 }
 my ( $identifier, $command ) = @ARGV;
 
-my $msg = "i3-msg";
-if ( exists $ENV{"SWAYSOCK"} ) {
-    $msg = "swaymsg";
+my $msg = 'i3-msg';
+if ( exists $ENV{'SWAYSOCK'} ) {
+    $msg = 'swaymsg';
 }
 
 my $focus_by_app_id = system( "$msg", "[app_id=$identifier] focus" ) == 0;
-unless ($focus_by_app_id) {
+if ( not $focus_by_app_id ) {
     my $focus_by_class = system( "$msg", "[class=$identifier] focus" ) == 0;
-
-    unless ($focus_by_class) {
-        system( "$msg", "exec", $command );
+    if ( not $focus_by_class ) {
+        system "$msg", 'exec', $command
+          or croak 'Could not send message';
     }
 }
 
@@ -53,7 +57,7 @@ __END__
 
 i3-run-or-raise - Focus or launch an application in i3/sway.
 
-=head1 SYNOPSIS
+=head1 USAGE
 
   i3-run-or-raise <app_id or class> <command>
 
@@ -61,11 +65,15 @@ i3-run-or-raise - Focus or launch an application in i3/sway.
 
 Focuses a window matching the app_id or class. If none are found, runs the specified command.
 
+=head1 OPTIONS
+
 =head1 AUTHOR
 
 Daniel Hennigar
 
-=head1 LICENSE
+=head1 LICENSE AND COPYRIGHT
+
+Copyright (C) 2025 Daniel Hennigar
 
 Licensed under the Artistic License 2.0 and GNU GPL.
 
