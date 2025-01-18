@@ -18,22 +18,21 @@
 # for more details.
 
 use 5.040;
-use strict;
-use warnings;
 use Carp;
+use English qw(-no_match_vars);
 use Fcntl qw(:flock);
 use File::Copy;
 use Getopt::Std;
 
-open my $self, '<', $0 or carp "Cannot open script file: $!";
-flock( $self, LOCK_EX | LOCK_NB )
-  or carp 'Another instance of i3-select-theme is already running. Exiting.';
+my $lock_file = '/tmp/i3-select-theme.lock';
+open my $lock, '>', $lock_file ## no critic (InputOutput::RequireBriefOpen)
+  or croak "$OS_ERROR";
 
 carp 'No display environment available. Exiting.'
   unless $ENV{DISPLAY} || $ENV{WAYLAND_DISPLAY};
 
 my %opts;
-getopts( 'h', \%opts );
+getopts( 'hd:', \%opts );
 
 if ( $opts{h} ) {
     say "Usage: $0 [options]";
@@ -41,9 +40,13 @@ if ( $opts{h} ) {
     exit 0;
 }
 
+my $dmenu = $opts{d} // 'fuzzel -d -l 6 -p "Select theme > "';
+
 my $theme = $ARGV[0]
-  // system('echo -e "day\nnight\nmorning\nbright\nacme" | fuzzel -d -l 6 -p "Select theme > "');
+  // qx(echo -e "day\nnight\nmorning\nbright\n" | $dmenu);
 chomp $theme;
+
+print "$theme\n";
 
 if ( $theme eq "" ) {
     carp 'No theme selected. Exiting.';
@@ -58,7 +61,8 @@ sub update_fuzzel {
 		carp "File $file exceeds $max_size bytes. Aborting to prevent corruption.";
 	}
 
-    open my $fh, '+<', $file or carp "Cannot open $file for reading/writing: $!";
+    open my $fh, '+<', $file ## no critic (InputOutput::RequireBriefOpen)
+      or carp "Cannot open $file for reading/writing: $!";
     my @lines;
     while (<$fh>) {
         if (/^(\w+)=/x) {    # Match lines with a key=value format
@@ -87,9 +91,6 @@ if ( $theme eq "day" ) {
         "$ENV{HOME}/.config/alacritty/colors.toml" )
       or carp "Copy failed: $!";
     run_command(
-        "gsettings set org.gnome.desktop.interface gtk-theme Mint-Yz-Base-Grey"
-    );
-    run_command(
         "gsettings set org.gnome.desktop.interface color-scheme prefer-light");
     run_command("emacsclient -e \"(load-theme-disable-others 'tomorrow-day)\"");
     update_fuzzel(
@@ -109,9 +110,6 @@ if ( $theme eq "night" ) {
     copy( "$ENV{HOME}/.config/alacritty/themes/tomorrow-night.toml",
         "$ENV{HOME}/.config/alacritty/colors.toml" )
       or carp "Copy failed: $!";
-    run_command(
-        "gsettings set org.gnome.desktop.interface gtk-theme Mint-Yz-Dark-Grey"
-    );
     run_command(
         "gsettings set org.gnome.desktop.interface color-scheme prefer-dark");
     run_command(
@@ -134,9 +132,6 @@ if ( $theme eq "morning" ) {
         "$ENV{HOME}/.config/alacritty/colors.toml" )
       or carp "Copy failed: $!";
     run_command(
-        "gsettings set org.gnome.desktop.interface gtk-theme Mint-Yz-Base-Grey"
-    );
-    run_command(
         "gsettings set org.gnome.desktop.interface color-scheme prefer-light");
     run_command(
         "emacsclient -e \"(load-theme-disable-others 'tomorrow-morning)\"");
@@ -158,9 +153,6 @@ if ( $theme eq "bright" ) {
         "$ENV{HOME}/.config/alacritty/colors.toml" )
       or carp "Copy failed: $!";
     run_command(
-        "gsettings set org.gnome.desktop.interface gtk-theme Mint-Yz-Dark-Grey"
-    );
-    run_command(
         "gsettings set org.gnome.desktop.interface color-scheme prefer-dark");
     run_command(
         "emacsclient -e \"(load-theme-disable-others 'tomorrow-bright)\"");
@@ -178,10 +170,7 @@ if ( $theme eq "bright" ) {
     );
 }
 
-END {
-	# Ensure the file handle is close and lock released on exit.
-	close $self if defined $self;
-}
+END { close $lock if defined $lock }
 
 __END__
 
