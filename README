@@ -1,23 +1,33 @@
-			i3::Utils
+			i3-utils
 
 This repository contains severals scripts which extend the
-functionality i3/sway. The i3::Utils module contains a few
-useful functions for your own scripting like 'find_node()'.
+functionality of i3/sway among other tasks for my workflow.
+
+Scripts:
+
+	i3-clam-shell		manage laptop screens
+	i3-cycle-focus		emulate 'alt-tab'
+	i3-file-picker		dmenu-based file manager
+	i3-new-workspace	find next empty workspace
+	i3-run-or-raise		focus if open, else launch
+	i3-select-theme		personal theme configs
+	i3-select-window	focus window with dmenu
+	i3-title-status		status info in window title
 
 Dependencies:
 
-    AnyEvent::I3 (https://metacpan.org/pod/AnyEvent::I3)
+	AnyEvent::I3 (https://metacpan.org/pod/AnyEvent::I3)
 
 Installation:
 
-    git clone https://github.com/dhennigar/i3-utils
-    cd i3-utils
-    perl Makefile.PL
-    make
-    make test
-    make install
+	git clone https://github.com/dhennigar/i3-utils
+	cd i3-utils
+	perl Makefile.PL
+	make
+	make test
+	make install
 
 Documentation:
 
-    Each function is documented via perldoc, as is the
-    i3::Utils module.
+	Each function is documented via POD,
+	accessible with `perldoc`.
