@@ -29,8 +29,8 @@ my $workspaces = i3->get_workspaces->recv
   or carp 'Could not get workspaces';
 
 my %workspace_numbers;
-foreach my $workspace (@{$workspaces}) {
-     $workspace_numbers{ $workspace->{num} } = 1;
+foreach my $workspace ( @{$workspaces} ) {
+    $workspace_numbers{ $workspace->{num} } = 1;
 }
 
 my $lowest_empty_workspace;
@@ -41,8 +41,8 @@ for my $i ( 1 .. $max_workspace_number ) {
         last;
     }
 }
-if (undef $lowest_empty_workspace) {
-    croak 'Could not find lowest workspace.'
+if ( undef $lowest_empty_workspace ) {
+    croak 'Could not find lowest workspace.';
 }
 
 my $cmd = ( $take ? "move to workspace $lowest_empty_workspace; " : q() )
