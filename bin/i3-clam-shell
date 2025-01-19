@@ -4,8 +4,6 @@
 
 # Copyright (C) 2024 Daniel Hennigar
 
-# Author: Daniel Hennigar
-
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of either:
 
@@ -16,35 +14,34 @@
 # See the LICENSE file for more information.
 
 use 5.040;
-use strict;
-use warnings;
 use Carp;
-use Getopt::Std;
+use English      qw(-no_match_vars);
+use Getopt::Long qw(:config auto_help auto_version);
+use i3::Utils;
 
-my %opts;
-getopts( 'h', \%opts );
-
-if ( $opts{h} ) {
-    say "Usage: $0 [options]";
-    say "See perldoc $0 for documentation.";
-    exit 0;
+sub VERSION {
+    return $i3::Utils::VERSION;
 }
 
-my $msg = "i3-msg";
-if ( exists $ENV{"SWAYSOCK"} ) {
-    $msg = "swaymsg";
+GetOptions() or croak 'Could not parse options';
+
+my $msg = 'i3-msg';
+if ( exists $ENV{'SWAYSOCK'} ) {
+    $msg = 'swaymsg';
 }
 
 my $lid_state_path = '/proc/acpi/button/lid/LID/state';
-open my $lid_state_fh, '<', $lid_state_path or croak 'Could not open lid state file';
+open my $lid_state_fh, '<', $lid_state_path
+  or croak 'Could not open lid state file';
 my $lid_state = <$lid_state_fh>;
-close $lid_state_fh;
+close $lid_state_fh
+  or croak 'Could not close lid state file';
 
-if ( $lid_state =~ m/open/ ) {
-    system("$msg output eDP-1 enable");
+if ( $lid_state =~ m/open/xms ) {
+    system "$msg output eDP-1 enable";
 }
 else {
-    system("$msg output eDP-1 disable");
+    system "$msg output eDP-1 disable";
 }
 
 __END__
@@ -57,7 +54,7 @@ i3-clam-shell - a simple script to ensure that laptop screens stay on/off when i
 
 =head1 SYNOPSIS
 
-  i3-clam-shell [--help]
+  i3-clam-shell [options]
 
 =head1 DESCRIPTION
 
@@ -65,7 +62,7 @@ Triggered by a i3/sway reload, this script will ensure that the displays are pow
 
 =over 4
 
-exec_always i3-clam-shell
+C<exec_always i3-clam-shell>
 
 =back
 
@@ -73,15 +70,23 @@ exec_always i3-clam-shell
 
 =over 4
 
-=item * --help
+=item B<--help>
+
+Print usage information
+
+=item B<--version>
+
+Print version information
 
 =back
 
 =head1 AUTHOR
 
-Daniel Hennigar
+Daniel Hennigar <danrhennigar@gmail.com>
 
-=head1 LICENSE
+=head1 LICENSE AND COPYRIGHT
+
+Copyright (C) 2025 Daniel Hennigar 
 
 Licensed under the Artistic License 2.0 and GNU GPL.
 

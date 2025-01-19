@@ -1,6 +1,6 @@
 #!/usr/bin/perl
 
-# sway-run-or-raise.pl --- focus a program if it is open; else, launch it.
+# i3-run-or-raise --- focus a program if it is open; else, launch it.
 
 # Copyright (c) 2024 Daniel Hennigar
 
@@ -15,23 +15,14 @@
 
 use 5.040;
 use Carp;
-use Getopt::Std;
-use i3::Utils;
+use Getopt::Long qw(:config auto_help auto_version);
 
-sub VERSION {
-    return $i3::Utils::VERSION;
-}
+our $VERSION = '0.01';
 
-my %opts;
-getopts( 'h', \%opts ) or pod2usage(2);
-if ( $opts{h} ) {
-    pod2usage(1);
-    exit 0;
-}
+GetOptions() or croak 'Could not parse options';
 
 if ( @ARGV < 2 ) {
-    pod2usage(2);
-    exit;
+    croak 'Must provide identifier and command';
 }
 my ( $identifier, $command ) = @ARGV;
 
@@ -57,9 +48,13 @@ __END__
 
 i3-run-or-raise - Focus or launch an application in i3/sway.
 
-=head1 USAGE
+=head1 SYNOPSIS
 
-  i3-run-or-raise <app_id or class> <command>
+    i3-run-or-raise < app_id | class > < command >
+
+    # Examples
+    i3-run-or-raise firefox firefox
+    i3-run-or-raise 'emacs' 'emacsclient -c'
 
 =head1 DESCRIPTION
 
@@ -69,7 +64,7 @@ Focuses a window matching the app_id or class. If none are found, runs the speci
 
 =head1 AUTHOR
 
-Daniel Hennigar
+Daniel Hennigar <danrhennigar@gmail.com>
 
 =head1 LICENSE AND COPYRIGHT
 

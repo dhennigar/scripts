@@ -14,46 +14,41 @@
 # See the LICENSE file for more information.
 
 use 5.040;
-use strict;
-use warnings;
 use Carp;
-use Getopt::Std;
+use English      qw(-no_match_vars);
+use Getopt::Long qw(:config auto_help auto_version);
 use AnyEvent::I3;
+use Data::Dumper;
 
+our $VERSION = '0.01';
 my $take = 0;
 
-my %opts;
-getopts( 'ht', \%opts );
-if ( $opts{h} ) {
-    say "Usage: $0 [options]";
-    say "See perldoc $0 for documentation.";
-    exit 0;
-}
-$take = 1 if $opts{t};
+GetOptions( 'take' => \$take );
 
 my $workspaces = i3->get_workspaces->recv
   or carp 'Could not get workspaces';
+
 my %workspace_numbers;
-foreach my $workspace (@$workspaces) {
-    $workspace_numbers{ $workspace->{num} } = 1;
+foreach my $workspace (@{$workspaces}) {
+     $workspace_numbers{ $workspace->{num} } = 1;
 }
 
 my $lowest_empty_workspace;
-my $max_workspace_number = scalar @$workspaces + 1;
+my $max_workspace_number = scalar @{$workspaces} + 1;
 for my $i ( 1 .. $max_workspace_number ) {
-    unless ( exists $workspace_numbers{$i} ) {
+    if ( not exists $workspace_numbers{$i} ) {
         $lowest_empty_workspace = $i;
         last;
     }
 }
+if (undef $lowest_empty_workspace) {
+    croak 'Could not find lowest workspace.'
+}
 
-carp 'Could not find lowest workspace.'
-  unless $lowest_empty_workspace;
-
-my $cmd = ($take ? "move to workspace $lowest_empty_workspace; " : "")
+my $cmd = ( $take ? "move to workspace $lowest_empty_workspace; " : q() )
   . "workspace $lowest_empty_workspace";
 
-i3->command( "$cmd" );
+i3->command("$cmd");
 
 __END__
 
@@ -61,31 +56,37 @@ __END__
 
 =head1 NAME
 
-i3-new-workspace - Open the lowest available empty workspace
+i3-new-workspace - Switch to the lowest empty workspace in i3/sway
 
 =head1 SYNOPSIS
 
-  i3-new-workspace [--take] [--help]
+    i3-new-workspace [--take] [--help]
 
 =head1 DESCRIPTION
 
-Find the lowest numbered workspace with no windows and switch to it. Optionally, take the currently focused window with you to that workspace.
+Find the lowest numbered empty workspace and switch to it. Optionally, take the currently focused window with you to that workspace (see OPTIONS).
 
 =head1 OPTIONS
 
 =over 4
 
-=item * --help
+=item B<--help>
 
-=item * --take - bring the current window with you
+Print usage information
+
+=item B<--take>
+
+Bring the current currently focused window with you to the new workspace
 
 =back
 
 =head1 AUTHOR
 
-Daniel Hennigar
+Daniel Hennigar <danrhennigar@gmail.com>
 
-=head1 LICENSE
+=head1 LICENSE AND COPYRIGHT
+
+Copyright (C) 2025 Daniel Hennigar
 
 Licensed under the Artistic License 2.0 and GNU GPL.
 

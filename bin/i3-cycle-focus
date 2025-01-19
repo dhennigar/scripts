@@ -15,21 +15,14 @@
 
 use 5.040;
 use Carp;
-use Getopt::Std;
-use Pod::Usage;
+use English      qw(-no_match_vars);
+use Getopt::Long qw(:config auto_help auto_version);
 use AnyEvent::I3 qw(:all);
 use i3::Utils    qw(find_node find_nodes);
 
-sub VERSION {
-    return $i3::Utils::VERSION;
-}
+our $VERSION = '0.01';
 
-my %opts;
-getopts( 'h', \%opts ) or pd2usage(2);
-if ( $opts{h} ) {
-    pod2usage(1);
-    exit 0;
-}
+GetOptions() or croak 'Could not parse options';
 
 my $i3 = i3();
 $i3->connect->recv or croak 'Failed to connect to i3.';
@@ -167,33 +160,39 @@ __END__
 
 i3-cycle-focus - Cycle through the windows on the current i3/sway workspace
 
-=head1 USAGE
+=head1 SYNOPSIS
 
 =over 4
 
-i3-cycle-focus [OPTIONS]
+    i3-cycle-focus [options]
 
 =back
 
 =head1 DESCRIPTION
 
-Emulate 'alt-tab' behavior for i3/sway, cycling the focus among the windows on the current workspace.
+Emulate 'alt-tab' behavior for i3/sway, cycling the focus among the windows on the current workspace. I find this easier than managing "containers" myself.
 
 =head1 OPTIONS
 
 =over 4
 
-=item * --help
+=item B<--help>
 
-=item * --reverse - reverse the direction of cycling
+Print help information
+
+=item B<--reverse>
+
+Reverse the direction of focus cycling (often this is counter-clockwise)
 
 =back
 
 =head1 AUTHOR
 
-Daniel Hennigar
+Daniel Hennigar <danrhennigar@gmail.com>
 
 =head1 LICENSE AND COPYRIGHT
+
+Copyright (C) 2025 Daniel Henngiar
 
 Licensed under the Artistic License 2.0 and GNU GPL.
 

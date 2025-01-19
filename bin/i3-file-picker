@@ -17,32 +17,20 @@
 
 use 5.040;
 use Carp;
-use Getopt::Std;
-use Pod::Usage;
-use English qw(-no_match_vars);
+use English      qw(-no_match_vars);
+use Getopt::Long qw(:config auto_help auto_version);
 use File::Spec;
 use Cwd;
 use IPC::Open2;
 
-sub VERSION {
-    return $i3::Utils::VERSION;
-}
-
+our $VERSION = '0.01';
 my $picker_cmd  = 'dmenu -i';
 my $show_hidden = 0;
 
-my %opts;
-getopts( 'hd:s', \%opts ) or pod2usage(2);
-if ( $opts{h} ) {
-    pod2usage();
-    exit 0;
-}
-if ( $opts{d} ) {
-    $picker_cmd = $opts{d};
-}
-if ( $opts{s} ) {
-    $show_hidden = 1;
-}
+GetOptions(
+    'dmenu-cmd=s'  => \$picker_cmd,
+    'show-hidden!' => \$show_hidden
+) or croak 'Could not parse options';
 
 sub run_picker {
     my @options = @_;
@@ -106,9 +94,9 @@ __END__
 
 i3-file-picker - use dmenu (or equivalent) as a simple file explorer
 
-=head1 USAGE
+=head1 SYNOPSIS
 
-  i3-new-workspace [OPTIONS]
+    i3-new-workspace [options]
 
 =head1 DESCRIPTION
 
@@ -118,17 +106,23 @@ Use dmenu, or a compatible menu program like rofi, as a simple file picker start
 
 =over 4
 
-=item * --help
+=item B<--help>
 
-=item * --show-hidden - show hidden files begining with "."
+Print usage information
 
-=item * --dmenu-command '<command>' - specify an alternative to dmenu (e.g., 'fuzzel -d')
+=item B<--show-hidden>
+
+Show hidden files begining with "."
+
+=item B<--dmenu-command <command>>
+
+Specify an alternative to dmenu (e.g., 'fuzzel -d')
 
 =back
 
 =head1 AUTHOR
 
-Daniel Hennigar
+Daniel Hennigar <danrhennigar@gmail.com>
 
 =head1 LICENSE AND COPYRIGHT
 

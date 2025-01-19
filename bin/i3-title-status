@@ -15,35 +15,24 @@
 
 use 5.040;
 use Carp;
-use Readonly;
-use Getopt::Std;
-
-# use Pod::Usage;
 use English      qw(-no_match_vars);
-use AnyEvent::I3 qw(:all);
+use Getopt::Long qw(:config auto_help auto_version);
 use POSIX        qw(strftime);
-use i3::Utils;
+use AnyEvent::I3 qw(:all);
 
-sub VERSION {
-    return $i3::Utils::VERSION;
-}
+our $VERSION = '0.01';
 
-Readonly my $THRESHOLD => 10;
-my $warning         = 0;
+my $warning = 0;
+my $format  = '[%clock][%date][%battery_charge% %battery_status] %title';
 my $battery_was_low = 0;
-my $format = '[%clock][%date][%battery_charge% %battery_status] %title';
 
-$Getopt::Std::STANDARD_HELP_VERSION = 1;
-my %opts;
-getopts( 'f:wt:', \%opts );
-if ( $opts{f} ) {
-    $format = $opts{f};
-}
-$warning = $opts{w};
-my $threshold = $opts{t} // $THRESHOLD;
+GetOptions(
+    'warning=i' => \$warning,
+    'format=s'  => \$format
+) or croak 'Could not parse options';
 
 my $i3 = i3();
-$i3->connect->recv or croak 'Error connecting to i3.';
+$i3->connect->recv or croak 'Error connecting to i3';
 
 sub update_and_send_commands {
 
@@ -92,7 +81,7 @@ sub update_and_send_commands {
 
     # change the window border color based on battery status
     if ($warning) {
-        if ( int($battery_charge) <= $threshold
+        if ( int($battery_charge) <= $warning
             && $battery_status eq 'Discharging' )
         {
             if ( !$battery_was_low ) {
@@ -109,7 +98,7 @@ sub update_and_send_commands {
             }
         }
     }
-    return 0;
+    return 1;
 }
 
 # update status line when window focus is changed
@@ -180,9 +169,9 @@ __END__
 
 i3-title-status - version C<$VERSION>
 
-=head1 USAGE
+=head1 SYNOPSIS
 
-    i3-title-status [OPTIONS]
+    i3-title-status [options]
 
 =head1 DESCRIPTION
 
@@ -193,9 +182,11 @@ Updates on window focus events, every 30 seconds, and when AC is plugged/unplugg
 
 =over 4
 
-=item * --help
+=item B<--help>
 
-=item * --format
+Print usage information
+
+=item B<--format>
 
 Specify a custom format for the status information. Valid substitutions are:
 
@@ -213,11 +204,15 @@ Specify a custom format for the status information. Valid substitutions are:
 
 =back
 
+=item B<--warning THRESHOLD> 
+
+Turn the focused container border red when battery is below threshold
+
 =back
 
 =head1 AUTHOR
 
-Daniel Hennigar
+Daniel Hennigar <danrhennigar@gmail.com>
 
 =head1 LICENSE AND COPYRIGHT
 
