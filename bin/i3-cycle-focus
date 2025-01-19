@@ -18,9 +18,10 @@ use Carp;
 use English      qw(-no_match_vars);
 use Getopt::Long qw(:config auto_help auto_version);
 use AnyEvent::I3 qw(:all);
-use i3::Utils    qw(find_node find_nodes);
 
 our $VERSION = '0.01';
+my $focused;
+my @siblings;
 
 GetOptions() or croak 'Could not parse options';
 
@@ -30,9 +31,47 @@ $i3->connect->recv or croak 'Failed to connect to i3.';
 my $initial_tree = $i3->get_tree->recv
   or croak 'Could not get initial tree';
 
-my $focused;
-my @siblings;
+# find the first node matching $criteria, a CODE ref which returns a boolean
+sub find_node {
+    my ( $node, $criteria ) = @_;
 
+    if ( ref $node ne 'HASH' || ref $criteria ne 'CODE' ) {
+        croak 'find_node expects a HASH and CODE ref as arguments';
+    }
+
+    if ( $criteria->($node) ) {
+        return $node;
+    }
+
+    for my $child ( @{ $node->{nodes} || [] } ) {
+        my $target_node = _find( $child, $criteria );
+        return $target_node if $target_node;
+    }
+
+    return 1;
+}
+
+# find all nodes matching $criteria, a CODE ref which returns a boolean
+sub find_nodes {
+    my ( $node, $criteria, $is_root, $children ) = @_;
+
+    if ( ref $node ne 'HASH' || ref $criteria ne 'CODE' ) {
+        croak 'find_nodes expects a HASH and CODE ref as arguments';
+    }
+
+    if ( !( $is_root && $criteria->($node) ) ) {
+        push @{$children}, $node;
+    }
+
+    foreach my $child ( @{ $node->{nodes} || [] },
+        @{ $node->{floating_nodes} || [] } )
+    {
+        _finds( $child, $criteria, 0, $children );
+    }
+    return @{$children};
+}
+
+# update the list of windows on the current workspace
 sub update_data {
     my ($tree) = @_;
 
@@ -99,10 +138,11 @@ sub cycle_focus {
     return (1);
 }
 
-# initialize variables with the initial tree on startup
+# initialize window list with the initial tree on startup
 update_data($initial_tree);
 
-# update data on window events, cycle focus on tick events
+# subscribe to i3 events via IPC
+# update window data on window events, cycle focus on tick events
 $i3->subscribe(
     {
         window => sub {
@@ -142,6 +182,7 @@ $i3->subscribe(
     }
 )->recv->{success} or croak 'Could not subscribe to i3 events.';
 
+# stop the process if there is an error in i3 communication
 $i3->subscribe(
     {
         _error => sub {
@@ -170,7 +211,8 @@ i3-cycle-focus - Cycle through the windows on the current i3/sway workspace
 
 =head1 DESCRIPTION
 
-Emulate 'alt-tab' behavior for i3/sway, cycling the focus among the windows on the current workspace. I find this easier than managing "containers" myself.
+Emulate 'alt-tab' behavior for i3/sway, cycling the focus among the windows on
+the current workspace. I find this easier than managing "containers" myself.
 
 =head1 OPTIONS
 

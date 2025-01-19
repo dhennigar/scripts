@@ -1,17 +1,28 @@
 #!/usr/bin/env perl
-use strict;
-use warnings;
+use 5.040;
 use Test::More;
 
-# Load your module
-use lib '../lib'; # Ensure the test file knows where to find your module
-use i3::Utils; # Replace with the actual module name
+our $VERSION = '0.01';
 
-# Test 1: Check if the module loads correctly
-ok(1, 'Basic test file runs'); # Sanity check
+# Get the bin directory from the environment
+my $bin_dir =
+  $ENV{PERL_LOCAL_LIB_ROOT}
+  ? "$ENV{PERL_LOCAL_LIB_ROOT}/bin"
+  : "$ENV{HOME}/perl5/bin";
 
-# Test 2: Check if the module loads without errors
-use_ok('i3::Utils');
+# Ensure the bin directory exists
+ok( -d $bin_dir, "The bin directory exists: $bin_dir" );
 
-# All done!
+# Get the list of scripts in the bin directory
+my @scripts = glob "$bin_dir/*";
+
+# Check that scripts exist
+ok( @scripts > 0, 'Scripts are found in the bin directory' );
+
+# Verify each script is executable
+foreach my $script (@scripts) {
+    ok( -f $script, "$script is a file" );
+    ok( -x $script, "$script is executable" );
+}
+
 done_testing();

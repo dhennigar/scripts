@@ -1,3 +1,2 @@
-- consider daemonizing i3-new-workspace for better responsiveness
-- perl script for screenshotting with grim
+- Split module into separate AnyEvent::I3::Utils project
 
