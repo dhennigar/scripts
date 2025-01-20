@@ -41,7 +41,7 @@ for my $i ( 1 .. $max_workspace_number ) {
         last;
     }
 }
-if ( undef $lowest_empty_workspace ) {
+if ( !defined $lowest_empty_workspace ) {
     croak 'Could not find lowest workspace.';
 }
 

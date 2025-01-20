@@ -1,2 +1,3 @@
-- Split module into separate AnyEvent::I3::Utils project
-
+- Refine performance of daemonized scripts.
+- Consider renaming scripts which aren't i3-specific.
+- Consider renaming project to `my-perl-scripts`, or something.
