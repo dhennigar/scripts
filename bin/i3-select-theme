@@ -55,9 +55,9 @@ sub update_fuzzel {
 
     my @lines;
     while ( my $line = <$fh> ) {
-        if ( $line =~ /^([\w-]+)=/xms ) {
+        if ( $line =~ /^([\w-]+)=/xms ) { # retrieve keys of the form "key="
             my $key = $1;
-            my $hash_key = $key =~ tr/-/_/r;
+            my $hash_key = $key =~ tr/-/_/r; # replace dashes with underscores
             say "Key: $hash_key";
             if ( exists $colors{$hash_key} ) {
                 say "Found match: $colors{$hash_key}";
