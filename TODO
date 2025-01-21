@@ -1,3 +1,4 @@
+- Handle time-of-day theme switching internally, instead of with gammastep
 - Refine performance of daemonized scripts.
 - Consider renaming scripts which aren't i3-specific.
 - Consider renaming project to `my-perl-scripts`, or something.
