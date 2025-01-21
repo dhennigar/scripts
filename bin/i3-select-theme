@@ -50,15 +50,18 @@ sub update_fuzzel {
         carp "File $file exceeds $MAX_SIZE bytes.";
     }
 
-    open my $fh, '+<', $file               ## no critic (InputOutput::RequireBriefOpen)
+    open my $fh, '+<', $file ## no critic (InputOutput::RequireBriefOpen)
       or carp "Cannot open $file for reading/writing: $OS_ERROR";
 
     my @lines;
     while ( my $line = <$fh> ) {
-        if ( $line =~ /^(\w+)=/xms ) {
+        if ( $line =~ /^([\w-]+)=/xms ) {
             my $key = $1;
-            if ( exists $colors{$key} ) {
-                $line = "$key=$colors{$key}\n";
+            my $hash_key = $key =~ tr/-/_/r;
+            say "Key: $hash_key";
+            if ( exists $colors{$hash_key} ) {
+                say "Found match: $colors{$hash_key}";
+                $line = "$key=$colors{$hash_key}\n";
             }
         }
         push @lines, $line;
