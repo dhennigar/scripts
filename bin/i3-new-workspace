@@ -1,4 +1,4 @@
-#!/usr/bin/perl
+#!/usr/bin/env perl
 
 # i3-new-workspace.pl --- open the next available empty workspace
 
@@ -26,7 +26,7 @@ my $take = 0;
 GetOptions( 'take' => \$take );
 
 my $workspaces = i3->get_workspaces->recv
-  or carp 'Could not get workspaces';
+  or croak 'Could not get workspaces';
 
 my %workspace_numbers;
 foreach my $workspace ( @{$workspaces} ) {
@@ -48,7 +48,7 @@ if ( !defined $lowest_empty_workspace ) {
 my $cmd = ( $take ? "move to workspace $lowest_empty_workspace; " : q() )
   . "workspace $lowest_empty_workspace";
 
-i3->command("$cmd");
+i3->command("$cmd") or croak 'Could not send i3 command';
 
 __END__
 
@@ -64,7 +64,8 @@ i3-new-workspace - Switch to the lowest empty workspace in i3/sway
 
 =head1 DESCRIPTION
 
-Find the lowest numbered empty workspace and switch to it. Optionally, take the currently focused window with you to that workspace (see OPTIONS).
+Find the lowest numbered empty workspace and switch to it. Optionally, take the
+currently focused window with you to that workspace (see OPTIONS).
 
 =head1 OPTIONS
 
