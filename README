@@ -1,16 +1,18 @@
-			i3-utils
+			scripts
 
-This repository contains severals scripts which extend the
-functionality of i3/sway among other tasks for my workflow.
+This is my personal collection of Perl scripts. Several of
+which extend the functionality of i3/sway using the module,
+AnyEvent::I3 (i3-*), while others interface with a menu
+program like `dmenu` to perform various tasks (dmenu-*).
 
 Scripts:
 
+	dmenu-file-picker	dmenu-based file manager
+	dmenu-select-theme	personal theme configs	
 	i3-clam-shell		manage laptop screens
 	i3-cycle-focus		emulate 'alt-tab'
-	i3-file-picker		dmenu-based file manager
 	i3-new-workspace	find next empty workspace
 	i3-run-or-raise		focus if open, else launch
-	i3-select-theme		personal theme configs
 	i3-select-window	focus window with dmenu
 	i3-title-status		status info in window title
 
