@@ -1,6 +1,6 @@
 #!/usr/bin/env perl
 
-# i3-file-picker --- a basic file chooser implementation for dmenu
+# dmenu-file-picker --- a basic file chooser implementation for dmenu
 
 # Copyright (C) 2024 Daniel Hennigar
 
@@ -92,11 +92,11 @@ __END__
 
 =head1 NAME
 
-i3-file-picker - use dmenu (or equivalent) as a simple file explorer
+dmenu-file-picker - use dmenu (or equivalent) as a simple file explorer
 
 =head1 SYNOPSIS
 
-    i3-new-workspace [options]
+    dmenu-file-picker [options]
 
 =head1 DESCRIPTION
 

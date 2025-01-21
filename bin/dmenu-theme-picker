@@ -1,6 +1,6 @@
 #!/usr/bin/env perl
 
-# i3-select-theme --- Update GTK, Emacs, Alacritty, and Fuzzel themes
+# dmenu-theme-picker --- Update GTK, Emacs, Alacritty, and Fuzzel themes
 
 # Copyright © 2025 Daniel Hennigar
 
@@ -190,11 +190,11 @@ __END__
 
 =head1 NAME
 
-i3-select-theme
+dmenu-theme-picker
 
 =head1 SYNOPSIS
 
-i3-select-theme [options] < day | night | morning | bright >
+dmenu-theme-picker [options] < day | night | morning | bright >
 
 =head1 DESCRIPTION
 
