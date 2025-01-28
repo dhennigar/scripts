@@ -27,7 +27,7 @@ my $format  = '[%clock][%date][%battery_charge% %battery_status] %title';
 my $battery_was_low = 0;
 
 GetOptions(
-    'warning=i' => \$warning,
+    'warning' => \$warning,
     'format=s'  => \$format
 ) or croak 'Could not parse options';
 
