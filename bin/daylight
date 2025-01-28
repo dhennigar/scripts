@@ -1,0 +1,203 @@
+#!/usr/bin/env perl
+
+# daylight --- perform actoins based on time day
+
+# Copyright (C) 2025 Daniel Hennigar
+# 
+# This program is free software: you can redistribute it and/or modify it
+# under the terms of either:
+# 
+#   a) The Artistic License 2.0, or
+#   b) The GNU General Public License as published by the Free Software
+#      Foundation, either version 3 of the License, or (at your option) any
+#      later version.
+# 
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the licenses
+# for more details.
+
+use 5.040;
+use Carp;
+use English      qw(-no_match_vars);
+use Getopt::Long qw(:config auto_version auto_help);
+use Math::Trig;
+use Readonly;
+use AnyEvent;
+use POSIX qw(strftime);
+
+our $VERSION = '0.01';
+
+# earthly constants
+Readonly my $days_per_yr => 365;        # days
+Readonly my $mins_per_hr => 60;         # minutes
+Readonly my $secs_per_hr => 3600;       # seconds
+Readonly my $obliquity   => 0.4091;     # radians
+Readonly my $offset      => 1.411;      # radians
+Readonly my $amplitude   => 0.1309;     # radians
+Readonly my $lag         => 0.0349;     # radians
+Readonly my $angular_spd => 0.2618;     # radians/hr
+# constants in EoT equation
+Readonly my $b_c1 => 9.87;      # sin(2B)
+Readonly my $b_c2 => 7.53;      # cos(B)
+Readonly my $b_c3 => 1.5;       # sin(B)
+# options
+my $log_level = 1;
+my $lat = 0;
+my $lon = 0;
+
+GetOptions(
+    'log-level=i' => \$log_level,
+    'lat=i'       => sub { $lat = $_[1] * pi / 180},
+    'lon=i'       => sub { $lon = $_[1] * pi / 180}
+) or croak 'Could not parse options';
+
+# Log messages with a timestamp. Expects a log level from 0-3 where
+# 0 = quiet, 1 = error, 2 = warning, and 3 = info.
+sub log_msg {
+    my ($level, $message) = @_;
+    my $time = strftime '%Y/%b/%e %H:%M:%S', localtime;
+    if ($level > $log_level) {
+        return 0;
+    }
+    my %levels = (
+        0 => 'daylight',
+        1 => 'error',
+        2 => 'warning',
+        3 => 'info'
+    );
+    my $level_string = $levels{$level // 0} // 'unknown' ;
+    my $log_file = $ENV{HOME} . '/.local/share/daylight.log';
+    open my $fh, '>>', $log_file or croak '$OS_ERROR';
+    print $fh "$time: $level_string: $message\n";
+    close $fh;
+    return 1;
+}
+
+sub get_solar_elevation {
+    # retrieve local time and date information
+    my ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst) = localtime();
+    log_msg(3, 'updating local time');
+    log_msg(3, sprintf("lat: %.3f rad, lon: %.3f rad", $lat, $lon));
+    
+    # solar declination δ = 23.44° ⋅ sin((360/365) ⋅ n - 81°)
+    my $delta = $obliquity * sin((2 * pi / $days_per_yr) * $yday - $offset);
+    log_msg(3, sprintf("declination: %.3f rad", $delta));
+
+    # calculate Equation of Time using improved formula
+    my $b = (2 * pi / $days_per_yr) * ($yday - 81);
+    my $eot = ($b_c1 * sin(2 * $b) - $b_c2 * cos($b) -
+               $b_c3 * sin($b)) / $mins_per_hr;
+    # log_msg(3, sprintf("B: %.6f rad", $b));    
+    log_msg(3, sprintf("EoT: %.3f hrs", $eot));
+    
+    # Local Solar Time = Standard Time + (Lon/15) + Equation of Time    
+    my $lst = $hour +  $eot;
+    log_msg(3, sprintf("LST: %.3f hrs", $lst));
+    
+    # hour angle h = 15° ⋅ (Local Solar Time - 12)
+    my $h   = $angular_spd * ($lst - 12);
+    log_msg(3, sprintf("hour angle: %.3f rad", $h));
+
+    # solar elevation ϑ = arcsin(sin(ϕ) ⋅ sin(δ) + cos(ϕ) ⋅ cos(δ) ⋅ cos(h))
+    # where ϕ is latitude, δ is solar declination, h is hour angle, in radians
+    my $sin_phi = sin $lat;
+    my $sin_delta = sin $delta;
+    my $cos_phi = cos $lat;
+    my $cos_delta = cos $delta;
+    my $cos_h = cos $h;
+    my $elev = asin(($sin_phi * $sin_delta) + ($cos_phi * $cos_delta * $cos_h));
+    log_msg(3, sprintf("solar elevation: %.3f rad", $elev));
+
+    return $elev;
+}
+
+log_msg(0, 'monitoring the sun\'s angle');
+
+my $w = AnyEvent->timer(
+    after    => 0,              # Start immediately
+    interval => $secs_per_hr,   # Run every 3600 seconds (1 hour)
+    cb       => sub {
+        my $elevation = get_solar_elevation();
+
+        printf(strftime("current time is %H:%M\n", localtime));
+        printf("the solar elevation is %.6f\n", $elevation);
+
+
+        if ($elevation < 0) {
+            log_msg(3, 'sun is down');
+        } else {
+            log_msg(3, 'sun is up');
+        }
+    },
+);
+
+print('timer started. press ctrl+c to exit.\n');
+print('see ~/.local/share/daylight.log for details\n');
+
+AnyEvent->condvar->recv;
+
+END {log_msg(0, 'shutting down') }
+
+__END__
+
+=head1 NAME
+
+daylight
+
+=head1 SYNOPSIS
+
+    daylight [options]
+
+=head1 DESCRIPTION
+
+Monitors the solar elevation based on the current time of day.
+
+=head1 OPTIONS
+
+=over 4
+
+=item B<--lat>
+
+Latitude in decimal degrees
+
+=item B<--lon>
+
+Longitude in decimal degrees
+
+=item B<--log-level>
+
+Integer log level. 0 = silent, 1 = error, 2 = warning, 3 = info.
+
+=item B<--help>
+
+Print usage information
+
+=item B<--version>
+
+Print version information
+
+=back
+
+=head1 AUTHOR
+
+Daniel Hennigar <danrhennigar@gmail.com> 
+
+=head1 LICENSE AND COPYRIGHT
+
+Copyright (C) 2025 Daniel Hennigar
+
+This program is free software: you can redistribute it and/or modify it
+under the terms of either:
+
+  a) The Artistic License 2.0, or
+  b) The GNU General Public License as published by the Free Software
+     Foundation, either version 3 of the License, or (at your option) any
+     later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the licenses
+for more details.
+
+=cut
