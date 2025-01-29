@@ -44,11 +44,9 @@ sub find_node {
     }
 
     for my $child ( @{ $node->{nodes} || [] } ) {
-        my $target_node = _find( $child, $criteria );
+        my $target_node = find_node( $child, $criteria );
         return $target_node if $target_node;
     }
-
-    return 1;
 }
 
 # find all nodes matching $criteria, a CODE ref which returns a boolean
@@ -59,14 +57,14 @@ sub find_nodes {
         croak 'find_nodes expects a HASH and CODE ref as arguments';
     }
 
-    if ( !( $is_root && $criteria->($node) ) ) {
+    if ( ( !$is_root && $criteria->($node) ) ) {
         push @{$children}, $node;
     }
 
     foreach my $child ( @{ $node->{nodes} || [] },
         @{ $node->{floating_nodes} || [] } )
     {
-        _finds( $child, $criteria, 0, $children );
+        find_nodes( $child, $criteria, 0, $children );
     }
     return @{$children};
 }
@@ -108,8 +106,11 @@ sub update_data {
             }
 
             my $has_name =
-              sub { defined $_[0]->{name} && length $_[0]->{name} };
-            @siblings = find_nodes( $workspace, $has_name );
+              sub { $_[0]->{type} eq 'con' &&
+                    defined $_[0]->{name} &&
+                    length $_[0]->{name} != 0 };
+            @siblings = find_nodes( $workspace, $has_name, 1, [] );
+            
             if ( not @siblings ) {
                 carp 'Could not find sibling nodes.';
                 return 0;
@@ -129,6 +130,7 @@ sub cycle_focus {
     while ( $index < @siblings && $siblings[$index]{id} != $focused->{id} ) {
         $index++;
     }
+    
     my $next_id = $siblings[ ( $index + 1 ) % @siblings ]{id}
       or croak 'Could not find next ID';
 
@@ -139,7 +141,7 @@ sub cycle_focus {
 }
 
 # initialize window list with the initial tree on startup
-update_data($initial_tree);
+update_data($initial_tree) or croak 'failed to initalize data';
 
 # subscribe to i3 events via IPC
 # update window data on window events, cycle focus on tick events
@@ -156,7 +158,8 @@ $i3->subscribe(
                             sub {
                                 my ($tree_condvar) = @_;
                                 my $tree = $tree_condvar->{_ae_sent}[0];
-                                update_data($tree);
+                                update_data($tree) or
+                                  croak 'failed to update data';
                             }
                         );
                         undef $timer;
@@ -166,14 +169,15 @@ $i3->subscribe(
         },
         tick => sub {
             my ($event) = shift;
+            
             if ( $event->{first} ) {
                 return;
             }
             if ( $event->{payload} eq 'cycle-focus' ) {
-                cycle_focus(0);
+                cycle_focus(0) or croak 'cycle focus failed.';
             }
             if ( $event->{payload} eq 'cycle-focus-reverse' ) {
-                cycle_focus(1);
+                cycle_focus(1) or croak 'cycle focus failed.';
             }
         },
         shutdown => sub {
