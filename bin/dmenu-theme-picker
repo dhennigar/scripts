@@ -34,7 +34,8 @@ if ( !$ENV{DISPLAY} || !$ENV{WAYLAND_DISPLAY} ) {
     croak 'Is i3 or sway running?';
 }
 
-my $theme = $ARGV[0] // qx(echo -e "day\nnight\nmorning\nbright\n" | $dmenu);
+my $theme = $ARGV[0] //
+  qx(echo -e "morning\nday\nevening\nnight\n" | $dmenu);
 chomp $theme;
 
 if ( $theme eq q() ) {
@@ -112,49 +113,15 @@ sub set_emacs_theme {
     my ($emacs_theme) = @_;
 
     run_command("emacsclient -e \"(load-theme-disable-others '$emacs_theme)\"")
-      or croak 'Could not update Emacs theme';
+      or carp 'Could not update Emacs theme';
 
     return 1;
 }
 
-if ( $theme eq 'day' ) {
-    set_gtk_scheme('prefer-light');
-    set_alacritty_theme('tomorrow-day');
-    set_emacs_theme('tomorrow-day');
-    update_fuzzel(
-        background      => 'ffffffff',
-        text            => '4d4d4cff',
-        prompt          => '4d4d4cff',
-        placeholder     => '8e908cff',
-        input           => '4d4d4cff',
-        match           => '4271aeff',
-        selection       => 'd6d6d6ff',
-        selection_text  => '4d4d4cff',
-        selection_match => 'c82829ff',
-        counter         => '8e908cff'
-    );
-}
-if ( $theme eq 'night' ) {
-    set_gtk_scheme('prefer-dark');
-    set_alacritty_theme('tomorrow-night');
-    set_emacs_theme('tomorrow-night');
-    update_fuzzel(
-        background      => '1d1f21ff',
-        text            => 'c5c8c6ff',
-        prompt          => 'c5c8c6ff',
-        placeholder     => '969896ff',
-        input           => 'c5c8c6ff',
-        match           => '81a2beff',
-        selection       => '373b41ff',
-        selection_text  => 'c5c8c6ff',
-        selection_match => 'cc6666ff',
-        counter         => '969896ff'
-    );
-}
 if ( $theme eq 'morning' ) {
     set_gtk_scheme('prefer-light');
-    set_alacritty_theme('tomorrow-morning');
-    set_emacs_theme('tomorrow-morning');
+    set_alacritty_theme('modus-operandi-tinted');
+    set_emacs_theme('modus-operandi-tinted');
     update_fuzzel(
         background      => 'fff0d0ff',
         text            => '4d4d4cff',
@@ -168,10 +135,47 @@ if ( $theme eq 'morning' ) {
         counter         => '8e908cff'
     );
 }
-if ( $theme eq 'bright' ) {
+
+if ( $theme eq 'day' ) {
+    set_gtk_scheme('prefer-light');
+    set_alacritty_theme('modus-operandi');
+    set_emacs_theme('modus-operandi');
+    update_fuzzel(
+        background      => 'ffffffff',
+        text            => '4d4d4cff',
+        prompt          => '4d4d4cff',
+        placeholder     => '8e908cff',
+        input           => '4d4d4cff',
+        match           => '4271aeff',
+        selection       => 'd6d6d6ff',
+        selection_text  => '4d4d4cff',
+        selection_match => 'c82829ff',
+        counter         => '8e908cff'
+    );
+}
+
+if ( $theme eq 'evening' ) {
     set_gtk_scheme('prefer-dark');
-    set_alacritty_theme('tomorrow-bright');
-    set_emacs_theme('tomorrow-bright');
+    set_alacritty_theme('modus-vivendi-tinted');
+    set_emacs_theme('modus-vivendi-tinted');
+    update_fuzzel(
+        background      => '1d1f21ff',
+        text            => 'c5c8c6ff',
+        prompt          => 'c5c8c6ff',
+        placeholder     => '969896ff',
+        input           => 'c5c8c6ff',
+        match           => '81a2beff',
+        selection       => '373b41ff',
+        selection_text  => 'c5c8c6ff',
+        selection_match => 'cc6666ff',
+        counter         => '969896ff'
+    );
+}
+
+if ( $theme eq 'night' ) {
+    set_gtk_scheme('prefer-dark');
+    set_alacritty_theme('modus-vivendi');
+    set_emacs_theme('modus-vivendi');
     update_fuzzel(
         background      => '000000ff',
         text            => 'eaeaeaff',
