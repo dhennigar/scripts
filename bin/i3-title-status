@@ -19,15 +19,12 @@ use English      qw(-no_match_vars);
 use Getopt::Long qw(:config auto_help auto_version);
 use POSIX        qw(strftime);
 use AnyEvent::I3 qw(:all);
+use Readonly;
 
 our $VERSION = '0.01';
 
-my $warning = 0;
-my $format  = '[%clock][%date][%battery_charge% %battery_status] %title';
-my $battery_was_low = 0;
-
+my $format  = '[%clock][%date][%battery_charge% %battery_status] <b>%title</b>';
 GetOptions(
-    'warning' => \$warning,
     'format=s'  => \$format
 ) or croak 'Could not parse options';
 
@@ -36,7 +33,7 @@ $i3->connect->recv or croak 'Error connecting to i3';
 
 sub update_and_send_commands {
 
-    # clock
+    Readonly my $threshold => 10;
     my $clock = strftime( '%H:%M',    localtime );
     my $date  = strftime( '%d-%b-%Y', localtime );
 
@@ -74,30 +71,19 @@ sub update_and_send_commands {
     $status =~ s/%battery_status/$battery_status/gxms;
     $status =~ s/%battery_symbol/$battery_symbol/gxms;
 
+    # change battery background color if it gets too low
+    my $redtag = '<span background="red">';
+    my $endtag = '</span>';
+    if ( int($battery_charge) < $threshold
+         && $battery_status eq 'Discharging' ) {
+        $status =~ s/(\[[0-9]% Discharging\])/$redtag$1$endtag/gx;
+    }
+
     # send command
     $i3->command(
         "[workspace=__focused__] title_format \"%title\"; title_format $status"
     );
 
-    # change the window border color based on battery status
-    if ($warning) {
-        if ( int($battery_charge) <= $warning
-            && $battery_status eq 'Discharging' )
-        {
-            if ( !$battery_was_low ) {
-                $battery_was_low = 1;
-                $i3->command(
-                    'client.focused "#FF0000" "#FF0000" "#FFFFFF" "#FF0000"');
-            }
-        }
-        else {
-            if ($battery_was_low) {
-                $battery_was_low = 0;
-                $i3->command(
-                    'client.focused "#3660d0" "#3660d0" "#FFFFFF" "#4670e0"');
-            }
-        }
-    }
     return 1;
 }
 
@@ -203,10 +189,6 @@ Specify a custom format for the status information. Valid substitutions are:
 =item * %battery_symbol
 
 =back
-
-=item B<--warning THRESHOLD> 
-
-Turn the focused container border red when battery is below threshold
 
 =back
 
