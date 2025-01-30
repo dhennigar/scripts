@@ -47,6 +47,8 @@ sub find_node {
         my $target_node = find_node( $child, $criteria );
         return $target_node if $target_node;
     }
+
+    return 0; # recall that a 0 return signals failure in perl.
 }
 
 # find all nodes matching $criteria, a CODE ref which returns a boolean
@@ -230,6 +232,10 @@ Print help information
 
 Reverse the direction of focus cycling (often this is counter-clockwise)
 
+=item B<--version>
+
+Print version information
+
 =back
 
 =head1 AUTHOR
@@ -238,8 +244,20 @@ Daniel Hennigar <danrhennigar@gmail.com>
 
 =head1 LICENSE AND COPYRIGHT
 
-Copyright (C) 2025 Daniel Henngiar
+Copyright (C) 2025 Daniel Hennigar
 
-Licensed under the Artistic License 2.0 and GNU GPL.
+This program is free software: you can redistribute it and/or modify it
+under the terms of either:
+
+  a) The Artistic License 2.0, or
+  b) The GNU General Public License as published by the Free Software
+     Foundation, either version 3 of the License, or (at your option) any
+     later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the licenses
+for more details.
 
 =cut
+
